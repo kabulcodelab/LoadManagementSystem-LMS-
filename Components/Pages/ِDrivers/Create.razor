@@ -1,0 +1,40 @@
+﻿@page "/drivers/create"
+
+@using LoadManagementSystem_LMS_.Models
+@using LoadManagementSystem_LMS_.Services
+
+@inject DriverService DriverService
+@inject NavigationManager Nav
+
+<h3>Add Driver</h3>
+
+<EditForm Model="driver" OnValidSubmit="Save">
+    <DataAnnotationsValidator />
+
+    <div class="mb-2">
+        <label>Full Name</label>
+        <InputText class="form-control" @bind-Value="driver.FullName" />
+    </div>
+
+    <div class="mb-2">
+        <label>Phone Number</label>
+        <InputText class="form-control" @bind-Value="driver.PhoneNumber" />
+    </div>
+
+    <div class="mb-2">
+        <label>License Number</label>
+        <InputText class="form-control" @bind-Value="driver.LicenseNumber" />
+    </div>
+
+    <button class="btn btn-success">Save</button>
+</EditForm>
+
+@code {
+    Driver driver = new();
+
+    async Task Save()
+    {
+        await DriverService.Add(driver);
+        Nav.NavigateTo("/drivers");
+    }
+}

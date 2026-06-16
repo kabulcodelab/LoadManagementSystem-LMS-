@@ -1,0 +1,52 @@
+﻿@page "/drivers/edit/{Id:int}"
+
+@using LoadManagementSystem_LMS_.Models
+@using LoadManagementSystem_LMS_.Services
+
+@inject DriverService DriverService
+@inject NavigationManager Nav
+
+<h3>Edit Driver</h3>
+
+@if (driver == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <EditForm Model="driver" OnValidSubmit="Update">
+        <div class="mb-2">
+            <label>Full Name</label>
+            <InputText class="form-control" @bind-Value="driver.FullName" />
+        </div>
+
+        <div class="mb-2">
+            <label>Phone Number</label>
+            <InputText class="form-control" @bind-Value="driver.PhoneNumber" />
+        </div>
+
+        <div class="mb-2">
+            <label>License Number</label>
+            <InputText class="form-control" @bind-Value="driver.LicenseNumber" />
+        </div>
+
+        <button class="btn btn-primary">Update</button>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    Driver? driver;
+
+    protected override async Task OnInitializedAsync()
+    {
+        driver = await DriverService.GetById(Id);
+    }
+
+    async Task Update()
+    {
+        await DriverService.Update(driver!);
+        Nav.NavigateTo("/drivers");
+    }
+}

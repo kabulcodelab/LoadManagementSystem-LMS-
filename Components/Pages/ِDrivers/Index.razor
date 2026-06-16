@@ -1,0 +1,66 @@
+﻿@page "/drivers"
+
+@using LoadManagementSystem_LMS_.Models
+@using LoadManagementSystem_LMS_.Services
+
+@inject DriverService DriverService
+
+<h3>Drivers</h3>
+
+<a class="btn btn-primary mb-2" href="/drivers/create">
+    + Add Driver
+</a>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Full Name</th>
+            <th>Phone</th>
+            <th>License</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @if (drivers == null)
+        {
+            <tr><td colspan="4">Loading...</td></tr>
+        }
+        else
+        {
+            @foreach (var d in drivers)
+            {
+                <tr>
+                    <td>@d.FullName</td>
+                    <td>@d.PhoneNumber</td>
+                    <td>@d.LicenseNumber</td>
+                    <td>
+                        <a class="btn btn-sm btn-warning" href="/drivers/edit/@d.Id">
+                            Edit
+                        </a>
+
+                        <button class="btn btn-sm btn-danger"
+                                @onclick="() => Delete(d.Id)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+@code {
+    List<Driver>? drivers;
+
+    protected override async Task OnInitializedAsync()
+    {
+        drivers = await DriverService.GetAll();
+    }
+
+    async Task Delete(int id)
+    {
+        await DriverService.Delete(id);
+        drivers = await DriverService.GetAll();
+    }
+}
