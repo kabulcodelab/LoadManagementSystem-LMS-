@@ -6,74 +6,104 @@
 @inject VehicleService VehicleService
 @inject NavigationManager Navigation
 
-<h3>Edit Vehicle</h3>
+<PageTitle>Edit Vehicle</PageTitle>
 
-@if (vehicle == null)
-{
-    <p>Loading...</p>
-}
-else
-{
-    <EditForm Model="vehicle"
-              OnValidSubmit="Update">
+<div class="page-container">
 
-        <DataAnnotationsValidator />
+    <div class="page-header">
+        <div class="page-title">Edit Vehicle</div>
+        <div class="page-subtitle">Update vehicle information</div>
+    </div>
 
-        <div class="mb-3">
-            <label>Vehicle Code</label>
-            <InputText class="form-control"
-                       @bind-Value="vehicle.VehicleCode" />
+    @if (vehicle == null)
+    {
+        <div class="lms-card">
+            Loading...
         </div>
+    }
+    else
+    {
+        <EditForm Model="@vehicle" OnValidSubmit="Update">
 
-        <div class="mb-3">
-            <label>Plate Number</label>
-            <InputText class="form-control"
-                       @bind-Value="vehicle.PlateNumber" />
-        </div>
+            <DataAnnotationsValidator />
+            <ValidationSummary />
 
-        <div class="mb-3">
-            <label>Model</label>
-            <InputText class="form-control"
-                       @bind-Value="vehicle.Model" />
-        </div>
+            <div class="lms-card lms-form">
 
-        <div class="mb-3">
-            <label>Vehicle Type</label>
-            <InputText class="form-control"
-                       @bind-Value="vehicle.VehicleType" />
-        </div>
+                <!-- Vehicle Code -->
+                <div class="mb-3">
+                    <label>Vehicle Code</label>
+                    <InputText class="form-control"
+                               @bind-Value="vehicle.VehicleCode" />
+                </div>
 
-        <div class="mb-3">
-            <label>Capacity</label>
-            <InputNumber class="form-control"
-                         @bind-Value="vehicle.Capacity" />
-        </div>
+                <!-- Plate -->
+                <div class="mb-3">
+                    <label>Plate Number</label>
+                    <InputText class="form-control"
+                               @bind-Value="vehicle.PlateNumber" />
+                </div>
 
-        <div class="mb-3">
-            <label>Manufacture Year</label>
-            <InputNumber class="form-control"
-                         @bind-Value="vehicle.ManufactureYear" />
-        </div>
+                <!-- Model -->
+                <div class="mb-3">
+                    <label>Model</label>
+                    <InputText class="form-control"
+                               @bind-Value="vehicle.Model" />
+                </div>
 
-        <div class="form-check mb-3">
-            <InputCheckbox class="form-check-input"
-                           @bind-Value="vehicle.IsActive" />
-            <label class="form-check-label">
-                Active
-            </label>
-        </div>
+                <!-- Type -->
+                <div class="mb-3">
+                    <label>Vehicle Type</label>
+                    <InputText class="form-control"
+                               @bind-Value="vehicle.VehicleType" />
+                </div>
 
-        <button class="btn btn-primary">
-            Update
-        </button>
+                <div class="row">
 
-        <a class="btn btn-secondary ms-2"
-           href="/vehicles">
-            Cancel
-        </a>
+                    <div class="col-md-6 mb-3">
+                        <label>Capacity</label>
+                        <InputNumber class="form-control"
+                                     @bind-Value="vehicle.Capacity" />
+                    </div>
 
-    </EditForm>
-}
+                    <div class="col-md-6 mb-3">
+                        <label>Manufacture Year</label>
+                        <InputNumber class="form-control"
+                                     @bind-Value="vehicle.ManufactureYear" />
+                    </div>
+
+                </div>
+
+                <!-- Active -->
+                <div class="form-check mb-3">
+                    <InputCheckbox class="form-check-input"
+                                   @bind-Value="vehicle.IsActive" />
+                    <label class="form-check-label">
+                        Active Vehicle
+                    </label>
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex gap-2 mt-3">
+
+                    <button type="submit" class="btn btn-lms-primary">
+                        Update
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            @onclick="Cancel">
+                        Cancel
+                    </button>
+
+                </div>
+
+            </div>
+
+        </EditForm>
+    }
+
+</div>
 
 @code {
 
@@ -90,7 +120,11 @@ else
     private async Task Update()
     {
         await VehicleService.Update(vehicle!);
+        Navigation.NavigateTo("/vehicles");
+    }
 
+    private void Cancel()
+    {
         Navigation.NavigateTo("/vehicles");
     }
 }

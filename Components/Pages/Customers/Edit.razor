@@ -6,67 +6,92 @@
 @inject CustomerService CustomerService
 @inject NavigationManager Navigation
 
-<h3>Edit Customer</h3>
+<PageTitle>Edit Customer</PageTitle>
 
-@if (customer == null)
-{
-    <p>Loading...</p>
-}
-else
-{
-    <EditForm Model="customer" OnValidSubmit="Update">
+<div class="page-container">
 
-        <DataAnnotationsValidator />
+    <div class="page-header">
+        <div class="page-title">Edit Customer</div>
+        <div class="page-subtitle">Update customer information</div>
+    </div>
 
-        <div class="mb-3">
-            <label>Customer Code</label>
-            <InputText class="form-control"
-                       @bind-Value="customer.CustomerCode" />
+    @if (customer == null)
+    {
+        <div class="lms-card">
+            Loading...
         </div>
+    }
+    else
+    {
+        <div class="lms-card">
 
-        <div class="mb-3">
-            <label>Name</label>
-            <InputText class="form-control"
-                       @bind-Value="customer.Name" />
+            <EditForm Model="@customer" OnValidSubmit="Update">
+
+                <DataAnnotationsValidator />
+
+                <!-- CODE -->
+                <div class="mb-3 lms-form">
+                    <label>Customer Code</label>
+                    <InputText class="form-control"
+                               @bind-Value="customer.CustomerCode" />
+                </div>
+
+                <!-- NAME -->
+                <div class="mb-3 lms-form">
+                    <label>Name</label>
+                    <InputText class="form-control"
+                               @bind-Value="customer.Name" />
+                </div>
+
+                <!-- PHONE -->
+                <div class="mb-3 lms-form">
+                    <label>Phone Number</label>
+                    <InputText class="form-control"
+                               @bind-Value="customer.PhoneNumber" />
+                </div>
+
+                <!-- EMAIL -->
+                <div class="mb-3 lms-form">
+                    <label>Email</label>
+                    <InputText class="form-control"
+                               @bind-Value="customer.Email" />
+                </div>
+
+                <!-- ADDRESS -->
+                <div class="mb-3 lms-form">
+                    <label>Address</label>
+                    <InputText class="form-control"
+                               @bind-Value="customer.Address" />
+                </div>
+
+                <!-- ACTIVE -->
+                <div class="form-check mb-3">
+                    <InputCheckbox class="form-check-input"
+                                   @bind-Value="customer.IsActive" />
+                    <label class="form-check-label">
+                        Active
+                    </label>
+                </div>
+
+                <!-- BUTTONS -->
+                <div class="d-flex gap-2">
+
+                    <button type="submit" class="btn btn-lms-primary">
+                        Update
+                    </button>
+
+                    <a class="btn btn-secondary" href="/customers">
+                        Cancel
+                    </a>
+
+                </div>
+
+            </EditForm>
+
         </div>
+    }
 
-        <div class="mb-3">
-            <label>Phone Number</label>
-            <InputText class="form-control"
-                       @bind-Value="customer.PhoneNumber" />
-        </div>
-
-        <div class="mb-3">
-            <label>Email</label>
-            <InputText class="form-control"
-                       @bind-Value="customer.Email" />
-        </div>
-
-        <div class="mb-3">
-            <label>Address</label>
-            <InputText class="form-control"
-                       @bind-Value="customer.Address" />
-        </div>
-
-        <div class="form-check mb-3">
-            <InputCheckbox class="form-check-input"
-                           @bind-Value="customer.IsActive" />
-            <label class="form-check-label">
-                Active
-            </label>
-        </div>
-
-        <button class="btn btn-primary">
-            Update
-        </button>
-
-        <a class="btn btn-secondary ms-2"
-           href="/customers">
-            Cancel
-        </a>
-
-    </EditForm>
-}
+</div>
 
 @code {
 

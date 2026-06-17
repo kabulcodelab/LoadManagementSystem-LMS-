@@ -5,114 +5,125 @@
 
 @inject VehicleService VehicleService
 
-<h3 class="mb-3">Vehicle Details</h3>
+<PageTitle>Vehicle Details</PageTitle>
 
-@if (vehicle == null)
-{
-    <div class="alert alert-info">
-        Loading...
+<div class="page-container">
+
+    <div class="page-header">
+        <div class="page-title">Vehicle Details</div>
+        <div class="page-subtitle">Full information & load history</div>
     </div>
-}
-else
-{
-    <!-- VEHICLE INFO -->
-    <div class="card shadow-sm p-4 mb-3">
 
-        <h4>@vehicle.VehicleCode</h4>
+    @if (vehicle == null)
+    {
+        <div class="lms-card">Loading...</div>
+    }
+    else
+    {
+        <!-- VEHICLE INFO -->
+        <div class="lms-card mb-3">
 
-        <hr />
+            <h4 class="mb-3">@vehicle.VehicleCode</h4>
 
-        <div class="row">
+            <div class="row">
 
-            <div class="col-md-6">
-                <p><b>Plate Number:</b> @vehicle.PlateNumber</p>
-                <p><b>Model:</b> @vehicle.Model</p>
-                <p><b>Type:</b> @vehicle.VehicleType</p>
+                <div class="col-md-6">
+                    <p><b>Plate Number:</b> @vehicle.PlateNumber</p>
+                    <p><b>Model:</b> @vehicle.Model</p>
+                    <p><b>Type:</b> @vehicle.VehicleType</p>
+                </div>
+
+                <div class="col-md-6">
+                    <p><b>Capacity:</b> @vehicle.Capacity</p>
+                    <p><b>Year:</b> @vehicle.ManufactureYear</p>
+
+                    <p>
+                        <b>Status:</b>
+                        <span class="badge @(vehicle.IsActive ? "bg-success" : "bg-danger")">
+                            @(vehicle.IsActive ? "Active" : "Inactive")
+                        </span>
+                    </p>
+                </div>
+
             </div>
+        </div>
 
-            <div class="col-md-6">
-                <p><b>Capacity:</b> @vehicle.Capacity</p>
-                <p><b>Year:</b> @vehicle.ManufactureYear</p>
+        <!-- LOAD HISTORY -->
+        <div class="lms-card">
 
-                <p>
-                    <b>Status:</b>
-                    <span class="badge @(vehicle.IsActive ? "bg-success" : "bg-danger")">
-                        @(vehicle.IsActive ? "Active" : "Inactive")
-                    </span>
-                </p>
-            </div>
+            <h5 class="mb-3">🚚 Load History</h5>
+
+            @if (loads == null)
+            {
+                <p>Loading...</p>
+            }
+            else if (loads.Count == 0)
+            {
+                <p>No loads found for this vehicle.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table lms-table">
+
+                        <thead>
+                            <tr>
+                                <th>Load No</th>
+                                <th>Tracking</th>
+                                <th>Customer</th>
+                                <th>Status</th>
+                                <th>Pickup</th>
+                                <th>Delivery</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var l in loads)
+                            {
+                                <tr>
+                                    <td>@l.LoadNumber</td>
+                                    <td>@l.TrackingNumber</td>
+                                    <td>@l.Customer?.Name</td>
+
+                                    <td>
+                                        <span class="@GetStatusClass(l.Status)">
+                                            @l.Status
+                                        </span>
+                                    </td>
+
+                                    <td>@l.PickupDate.ToShortDateString()</td>
+
+                                    <td>
+                                        @(l.DeliveryDate?.ToShortDateString() ?? "-")
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+
+                    </table>
+                </div>
+            }
 
         </div>
 
-    </div>
+        <!-- ACTION BUTTONS -->
+        <div class="mt-3 d-flex gap-2">
 
-    <!-- LOAD HISTORY -->
-    <div class="card shadow-sm p-4">
+            <a class="btn btn-lms-gold"
+               href="/vehicles/edit/@vehicle.Id">
+                Edit
+            </a>
 
-        <h5>🚚 Load History</h5>
+            <a class="btn btn-secondary"
+               href="/vehicles">
+                Back
+            </a>
 
-        @if (loads == null || loads.Count == 0)
-        {
-            <p>No loads found for this vehicle.</p>
-        }
-        else
-        {
-            <table class="table table-striped">
+        </div>
+    }
 
-                <thead class="table-dark">
-                    <tr>
-                        <th>Load No</th>
-                        <th>Tracking</th>
-                        <th>Customer</th>
-                        <th>Status</th>
-                        <th>Pickup Date</th>
-                        <th>Delivery Date</th>
-                    </tr>
-                </thead>
+</div>
 
-                <tbody>
-                    @foreach (var l in loads)
-                    {
-                        <tr>
-                            <td>@l.LoadNumber</td>
-                            <td>@l.TrackingNumber</td>
-                            <td>@l.Customer?.Name</td>
-
-                            <td>
-                                <span class="@GetStatusClass(l.Status)">
-                                    @l.Status
-                                </span>
-                            </td>
-
-                            <td>@l.PickupDate.ToShortDateString()</td>
-
-                            <td>
-                                @(l.DeliveryDate?.ToShortDateString() ?? "-")
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-
-            </table>
-        }
-
-    </div>
-
-    <!-- BUTTONS -->
-    <div class="mt-3">
-
-        <a class="btn btn-warning"
-           href="/vehicles/edit/@vehicle.Id">
-            Edit
-        </a>
-
-        <a class="btn btn-secondary ms-2"
-           href="/vehicles">
-            Back
-        </a>
-
-    </div>
-}
 @code {
 
     [Parameter]
@@ -125,6 +136,7 @@ else
     {
         vehicle = await VehicleService.GetById(Id);
 
+        // ⚠️ اگر هنوز این متد را نداری، باید در VehicleService اضافه شود
         loads = await VehicleService.GetVehicleLoads(Id);
     }
 

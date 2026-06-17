@@ -1,81 +1,246 @@
 ﻿@implements IDisposable
-
 @inject NavigationManager NavigationManager
 
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">LoadManagementSystem(LMS)</a>
+<style>
+    /* Sidebar base */
+    .verano-sidebar,
+    .verano-sidebar * {
+        font-family: "Segoe UI", Tahoma, sans-serif !important;
+    }
+
+    .verano-sidebar {
+        background-color: #0b1a2e !important;
+        min-width: 260px;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 1rem;
+        color: #e8edf3 !important;
+    }
+
+    /* Brand section */
+    .verano-brand .brand-name {
+        color: #f5d742 !important;
+        font-weight: 700;
+        font-size: 1.3rem;
+        line-height: 1.2;
+        letter-spacing: 0.5px;
+    }
+
+    .verano-brand .brand-sub {
+        color: #f5d742 !important;
+        font-size: 0.7rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        opacity: 0.9;
+    }
+
+    .verano-divider {
+        border-color: rgba(245, 215, 66, 0.4) !important;
+        opacity: 0.7;
+    }
+
+    /* لوگو – افکت هاور با روشنایی بیشتر */
+    .brand-logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.25s ease, filter 0.25s ease;
+        cursor: default;
+        filter: drop-shadow(0 0 10px rgba(245, 215, 66, 0.3));
+    }
+
+        .brand-logo:hover {
+            transform: scale(1.08);
+            filter: drop-shadow(0 0 24px rgba(245, 215, 66, 0.7));
+        }
+
+        .brand-logo svg {
+            display: block;
+        }
+
+    /* Nav links */
+    .verano-sidebar .nav-link {
+        transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+        border-radius: 6px;
+        color: #d0d9e6 !important;
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 0.75rem;
+        text-decoration: none;
+        background: transparent;
+        border: none;
+        width: 100%;
+        text-align: right;
+    }
+
+        .verano-sidebar .nav-link i {
+            font-size: 1.1rem;
+            margin-left: 0.75rem;
+            margin-right: 0.5rem;
+            color: #f5d742 !important;
+            width: 1.4rem;
+            text-align: center;
+        }
+
+        .verano-sidebar .nav-link:hover {
+            background-color: rgba(245, 215, 66, 0.15) !important;
+            color: #fff8e0 !important;
+        }
+
+            .verano-sidebar .nav-link:hover i {
+                color: #ffe066 !important;
+            }
+
+    /* Active link */
+    .verano-sidebar .nav-pills .nav-link.active,
+    .verano-sidebar .nav-pills .show > .nav-link {
+        background-color: rgba(245, 215, 66, 0.2) !important;
+        color: #fff8e0 !important;
+        border-right: 3px solid #f5d742;
+    }
+
+        .verano-sidebar .nav-pills .nav-link.active i,
+        .verano-sidebar .nav-pills .show > .nav-link i {
+            color: #ffe066 !important;
+        }
+
+    /* Logout button */
+    .verano-sidebar .logout-btn {
+        background: transparent;
+        border: none;
+        color: #d0d9e6 !important;
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+        width: 100%;
+        text-align: right;
+        display: flex;
+        align-items: center;
+    }
+
+        .verano-sidebar .logout-btn i {
+            font-size: 1.1rem;
+            margin-left: 0.75rem;
+            margin-right: 0.5rem;
+            color: #f5d742 !important;
+            width: 1.4rem;
+            text-align: center;
+        }
+
+        .verano-sidebar .logout-btn:hover {
+            background-color: rgba(245, 215, 66, 0.15) !important;
+            color: #fff8e0 !important;
+        }
+
+            .verano-sidebar .logout-btn:hover i {
+                color: #ffe066 !important;
+            }
+
+    .verano-sidebar .hr-gold {
+        border-color: rgba(245, 215, 66, 0.3);
+        margin: 0.75rem 0;
+    }
+
+    .verano-sidebar .nav-scroll {
+        overflow-y: auto;
+        flex: 1;
+    }
+
+        .verano-sidebar .nav-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .verano-sidebar .nav-scroll::-webkit-scrollbar-track {
+            background: #0b1a2e;
+        }
+
+        .verano-sidebar .nav-scroll::-webkit-scrollbar-thumb {
+            background: #f5d742;
+            border-radius: 4px;
+        }
+
+    @@media (max-width: 768px) {
+        .verano-sidebar {
+            min-width: 100%;
+            height: auto;
+            padding: 0.75rem;
+        }
+
+            .verano-sidebar .nav-scroll {
+                max-height: 80vh;
+            }
+    }
+</style>
+
+<div class="verano-sidebar" dir="ltr">
+
+    <!-- ========== برند با لوگوی روشن‌تر ========== -->
+    <div class="verano-brand mb-3 pb-2 border-bottom verano-divider">
+        <div class="d-flex align-items-center px-2 py-2" style="cursor:default; gap: 12px;">
+
+            <div class="brand-logo">
+                <svg width="52" height="52" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="2" width="52" height="52" rx="14" fill="#0b1a2e" stroke="#f5d742" stroke-width="3" />
+                    <path d="M14 18 L28 30 L42 18" stroke="#f5d742" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+                    <rect x="16" y="28" width="24" height="14" rx="2" stroke="#f5d742" stroke-width="3" fill="none" />
+                    <line x1="20" y1="34" x2="36" y2="34" stroke="#f5d742" stroke-width="2.5" opacity="0.9" />
+                    <circle cx="28" cy="42" r="3" fill="#f5d742" />
+                    <circle cx="44" cy="12" r="3" fill="#f5d742" opacity="0.7" />
+                </svg>
+            </div>
+
+            <div>
+                <div class="brand-name">LMS</div>
+                <div class="brand-sub">Load Management</div>
+            </div>
+
+        </div>
     </div>
-</div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-
-    <nav class="flex-column">
-      
-        <AuthorizeView>
-            <Authorized>
-                <div class="nav-item px-3">
+    <!-- منو (بدون تغییر) -->
+    <div class="nav-scroll">
+        <nav class="nav nav-pills flex-column nav-gap">
+            <AuthorizeView>
+                <Authorized>
                     <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                        <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Dashboard
+                        <i class="bi bi-house-door-fill"></i> Dashboard
                     </NavLink>
-                </div>
-
-
-                <div class="nav-item px-3">
                     <NavLink class="nav-link" href="/drivers">
-                        <span class="bi bi-people-fill"></span> Drivers
+                        <i class="bi bi-people-fill"></i> Drivers
                     </NavLink>
-                </div>
-                <div class="nav-item px-3">
                     <NavLink class="nav-link" href="/vehicles">
-                        <span class="bi bi-truck"></span>
-                        Vehicles
+                        <i class="bi bi-truck"></i> Vehicles
                     </NavLink>
-                </div>
-                <div class="nav-item px-3">
                     <NavLink class="nav-link" href="/customers">
-                        <span class="bi bi-buildings"></span>
-                        Customers
+                        <i class="bi bi-buildings"></i> Customers
                     </NavLink>
-                </div>
-                <div class="nav-item px-3">
                     <NavLink class="nav-link" href="/loads">
-                        <span class="bi bi-box-seam"></span>
-                        Loads
+                        <i class="bi bi-box-seam"></i> Loads
                     </NavLink>
-                </div>
-
-                <div class="nav-item px-3">
+                    <hr class="hr-gold" />
                     <NavLink class="nav-link" href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Setting
+                        <i class="bi bi-person-fill"></i> Settings
                     </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <form action="Account/Logout" method="post">
+                    <form action="Account/Logout" method="post" class="mt-1">
                         <AntiforgeryToken />
                         <input type="hidden" name="ReturnUrl" value="@currentUrl" />
-                        <button type="submit" class="nav-link">
-                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                        <button type="submit" class="logout-btn">
+                            <i class="bi bi-box-arrow-left"></i> Logout
                         </button>
                     </form>
-                </div>
-            </Authorized>
-            <NotAuthorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="Account/Register">
-                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
+                </Authorized>
+                <NotAuthorized>
                     <NavLink class="nav-link" href="Account/Login">
-                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
+                        <i class="bi bi-box-arrow-in-right"></i> Login
                     </NavLink>
-                </div>
-            </NotAuthorized>
-        </AuthorizeView>
-    </nav>
+                    <NavLink class="nav-link" href="Account/Register">
+                        <i class="bi bi-person-plus-fill"></i> Register
+                    </NavLink>
+                </NotAuthorized>
+            </AuthorizeView>
+        </nav>
+    </div>
 </div>
 
 @code {
@@ -98,4 +263,3 @@
         NavigationManager.LocationChanged -= OnLocationChanged;
     }
 }
-

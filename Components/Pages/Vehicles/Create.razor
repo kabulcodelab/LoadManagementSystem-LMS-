@@ -6,67 +6,87 @@
 @inject VehicleService VehicleService
 @inject NavigationManager Navigation
 
-<h3>Add Vehicle</h3>
+<PageTitle>Create Vehicle</PageTitle>
 
-<EditForm Model="vehicle"
-          OnValidSubmit="Save">
+<div class="page-container">
 
-    <DataAnnotationsValidator />
-
-    <div class="mb-3">
-        <label>Vehicle Code</label>
-        <InputText class="form-control"
-                   @bind-Value="vehicle.VehicleCode" />
+    <div class="page-header">
+        <div class="page-title">Create Vehicle</div>
+        <div class="page-subtitle">Add a new vehicle to the system</div>
     </div>
 
-    <div class="mb-3">
-        <label>Plate Number</label>
-        <InputText class="form-control"
-                   @bind-Value="vehicle.PlateNumber" />
-    </div>
+    <EditForm Model="@vehicle" OnValidSubmit="Save">
 
-    <div class="mb-3">
-        <label>Model</label>
-        <InputText class="form-control"
-                   @bind-Value="vehicle.Model" />
-    </div>
+        <DataAnnotationsValidator />
+        <ValidationSummary />
 
-    <div class="mb-3">
-        <label>Vehicle Type</label>
-        <InputText class="form-control"
-                   @bind-Value="vehicle.VehicleType" />
-    </div>
+        <div class="lms-card lms-form">
 
-    <div class="mb-3">
-        <label>Capacity</label>
-        <InputNumber class="form-control"
-                     @bind-Value="vehicle.Capacity" />
-    </div>
+            <!-- Vehicle Code -->
+            <div class="mb-3">
+                <label>Vehicle Code</label>
+                <InputText class="form-control" @bind-Value="vehicle.VehicleCode" />
+            </div>
 
-    <div class="mb-3">
-        <label>Manufacture Year</label>
-        <InputNumber class="form-control"
-                     @bind-Value="vehicle.ManufactureYear" />
-    </div>
+            <!-- Plate -->
+            <div class="mb-3">
+                <label>Plate Number</label>
+                <InputText class="form-control" @bind-Value="vehicle.PlateNumber" />
+            </div>
 
-    <div class="form-check mb-3">
-        <InputCheckbox class="form-check-input"
-                       @bind-Value="vehicle.IsActive" />
-        <label class="form-check-label">
-            Active
-        </label>
-    </div>
+            <!-- Model -->
+            <div class="mb-3">
+                <label>Model</label>
+                <InputText class="form-control" @bind-Value="vehicle.Model" />
+            </div>
 
-    <button class="btn btn-success">
-        Save
-    </button>
+            <!-- Type -->
+            <div class="mb-3">
+                <label>Vehicle Type</label>
+                <InputText class="form-control" @bind-Value="vehicle.VehicleType" />
+            </div>
 
-    <a class="btn btn-secondary ms-2"
-       href="/vehicles">
-        Cancel
-    </a>
+            <div class="row">
 
-</EditForm>
+                <div class="col-md-6 mb-3">
+                    <label>Capacity</label>
+                    <InputNumber class="form-control" @bind-Value="vehicle.Capacity" />
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label>Manufacture Year</label>
+                    <InputNumber class="form-control" @bind-Value="vehicle.ManufactureYear" />
+                </div>
+
+            </div>
+
+            <!-- Active -->
+            <div class="form-check mb-3">
+                <InputCheckbox class="form-check-input"
+                               @bind-Value="vehicle.IsActive" />
+                <label class="form-check-label">
+                    Active Vehicle
+                </label>
+            </div>
+
+            <!-- Buttons -->
+            <div class="d-flex gap-2 mt-3">
+
+                <button type="submit" class="btn btn-add">
+                    Save Vehicle
+                </button>
+
+                <a class="btn btn-secondary" href="/vehicles">
+                    Cancel
+                </a>
+
+            </div>
+
+        </div>
+
+    </EditForm>
+
+</div>
 
 @code {
 
@@ -75,7 +95,6 @@
     private async Task Save()
     {
         await VehicleService.Add(vehicle);
-
         Navigation.NavigateTo("/vehicles");
     }
 }

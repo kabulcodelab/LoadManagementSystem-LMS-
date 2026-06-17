@@ -6,83 +6,87 @@
 @inject LoadService LoadService
 @inject DocumentService DocumentService
 
-<h3 class="mb-3">Load Details</h3>
+<div class="page-container">
 
-@if (load == null)
-{
-    <div class="alert alert-info">
-        Loading...
-    </div>
-}
-else
-{
-    <div class="card shadow-sm p-4">
-
+    @if (load == null)
+    {
+        <div class="lms-card">Loading...</div>
+    }
+    else
+    {
         <!-- HEADER -->
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="page-header d-flex justify-content-between align-items-center">
 
-            <h4 class="mb-0">
-                Load #@load.LoadNumber
-            </h4>
+            <div>
+                <div class="page-title">
+                    Load #@load.LoadNumber
+                </div>
+                <div class="page-subtitle">
+                    Tracking: @load.TrackingNumber
+                </div>
+            </div>
 
-            <span class="@GetStatusClass(load.Status)">
+            <span class="badge @GetStatusClass(load.Status)">
                 @load.Status
             </span>
 
         </div>
 
-        <hr />
-
         <!-- MAIN INFO -->
-        <div class="row">
+        <div class="lms-card">
 
-            <div class="col-md-6">
-                <p><b>Tracking Number:</b> @load.TrackingNumber</p>
-                <p><b>Customer:</b> @load.Customer?.Name</p>
-                <p><b>Driver:</b> @load.Driver?.FullName</p>
-                <p><b>Vehicle:</b> @load.Vehicle?.PlateNumber</p>
-            </div>
+            <div class="row g-3">
 
-            <div class="col-md-6">
-                <p><b>Weight:</b> @load.Weight</p>
-                <p><b>Price:</b> @load.Price</p>
-                <p><b>Pickup Date:</b> @load.PickupDate.ToShortDateString()</p>
-                <p><b>Delivery Date:</b> @(load.DeliveryDate?.ToShortDateString() ?? "-")</p>
+                <div class="col-12 col-md-6">
+                    <p><b>Customer:</b> @load.Customer?.Name</p>
+                    <p><b>Driver:</b> @load.Driver?.FullName</p>
+                    <p><b>Vehicle:</b> @load.Vehicle?.PlateNumber</p>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <p><b>Weight:</b> @load.Weight</p>
+                    <p><b>Price:</b> @load.Price</p>
+                    <p><b>Pickup:</b> @load.PickupDate.ToShortDateString()</p>
+                    <p><b>Delivery:</b> @(load.DeliveryDate?.ToShortDateString() ?? "-")</p>
+                </div>
+
             </div>
 
         </div>
-
-        <hr />
 
         <!-- LOCATIONS -->
-        <div class="row">
+        <div class="lms-card mt-3">
 
-            <div class="col-md-6">
-                <h6>Pickup Location</h6>
-                <p>@load.PickupLocation</p>
-            </div>
+            <div class="row g-3">
 
-            <div class="col-md-6">
-                <h6>Delivery Location</h6>
-                <p>@load.DeliveryLocation</p>
+                <div class="col-12 col-md-6">
+                    <h6 class="fw-bold">Pickup Location</h6>
+                    <p>@load.PickupLocation</p>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <h6 class="fw-bold">Delivery Location</h6>
+                    <p>@load.DeliveryLocation</p>
+                </div>
+
             </div>
 
         </div>
-
-        <hr />
 
         <!-- REMARKS -->
-        <div class="mb-3">
-            <h6>Remarks</h6>
-            <p>@load.Remarks</p>
+        <div class="lms-card mt-3">
+
+            <h6 class="fw-bold">Remarks</h6>
+            <p class="mb-0">@load.Remarks</p>
+
         </div>
 
-        <hr />
+        <!-- DOCUMENTS -->
+        <div class="lms-card mt-3">
 
-        <!-- 📄 DOCUMENTS SECTION -->
-        <div class="mb-3">
-
-            <h5>📄 Documents</h5>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Documents</h5>
+            </div>
 
             <InputFile OnChange="UploadFile" class="form-control mb-3" />
 
@@ -104,7 +108,7 @@ else
 
                             <span>@doc.FileName</span>
 
-                            <div>
+                            <div class="d-flex gap-2">
 
                                 <a class="btn btn-sm btn-success"
                                    href="@doc.FilePath"
@@ -112,7 +116,7 @@ else
                                     Download
                                 </a>
 
-                                <button class="btn btn-sm btn-danger ms-2"
+                                <button class="btn btn-sm btn-danger"
                                         @onclick="() => DeleteDoc(doc.Id)">
                                     Delete
                                 </button>
@@ -127,25 +131,22 @@ else
 
         </div>
 
-        <hr />
+        <!-- ACTION BUTTONS -->
+        <div class="d-flex flex-wrap gap-2 mt-3">
 
-        <!-- BUTTONS -->
-        <div class="mt-4">
-
-            <a class="btn btn-warning"
-               href="/loads/edit/@load.Id">
+            <a class="btn btn-warning" href="/loads/edit/@load.Id">
                 Edit
             </a>
 
-            <a class="btn btn-secondary ms-2"
-               href="/loads">
+            <a class="btn btn-secondary" href="/loads">
                 Back
             </a>
 
         </div>
+    }
 
-    </div>
-}
+</div>
+
 @code {
 
     [Parameter]
@@ -160,40 +161,33 @@ else
         documents = await DocumentService.GetByLoad(Id);
     }
 
-    // 🎨 STATUS BADGE
     string GetStatusClass(LoadStatus status)
     {
         return status switch
         {
-            LoadStatus.Pending => "badge bg-secondary",
-            LoadStatus.Assigned => "badge bg-primary",
-            LoadStatus.PickedUp => "badge bg-info",
-            LoadStatus.InTransit => "badge bg-warning text-dark",
-            LoadStatus.Delivered => "badge bg-success",
-            LoadStatus.Cancelled => "badge bg-danger",
-            _ => "badge bg-dark"
+            LoadStatus.Pending => "bg-secondary",
+            LoadStatus.Assigned => "bg-primary",
+            LoadStatus.PickedUp => "bg-info",
+            LoadStatus.InTransit => "bg-warning text-dark",
+            LoadStatus.Delivered => "bg-success",
+            LoadStatus.Cancelled => "bg-danger",
+            _ => "bg-dark"
         };
     }
 
-    // 📤 Upload file
     private async Task UploadFile(InputFileChangeEventArgs e)
     {
         var file = e.File;
 
         using var stream = file.OpenReadStream(10 * 1024 * 1024);
 
-        var formFile = new FormFile(stream, 0, file.Size, file.Name, file.Name)
-        {
-            Headers = new HeaderDictionary(),
-            ContentType = file.ContentType
-        };
+        var formFile = new FormFile(stream, 0, file.Size, file.Name, file.Name);
 
         await DocumentService.Upload(formFile, Id);
 
         documents = await DocumentService.GetByLoad(Id);
     }
 
-    // 🗑 Delete document
     private async Task DeleteDoc(int docId)
     {
         await DocumentService.Delete(docId);

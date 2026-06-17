@@ -6,35 +6,68 @@
 @inject DriverService DriverService
 @inject NavigationManager Nav
 
-<h3>Add Driver</h3>
+<div class="page-container">
 
-<EditForm Model="driver" OnValidSubmit="Save">
-    <DataAnnotationsValidator />
-
-    <div class="mb-2">
-        <label>Full Name</label>
-        <InputText class="form-control" @bind-Value="driver.FullName" />
+    <!-- HEADER -->
+    <div class="page-header">
+        <h2 class="page-title">Create Driver</h2>
+        <p class="page-subtitle">Add a new driver to the system</p>
     </div>
 
-    <div class="mb-2">
-        <label>Phone Number</label>
-        <InputText class="form-control" @bind-Value="driver.PhoneNumber" />
+    <!-- FORM -->
+    <div class="lms-card">
+
+        <div class="row g-3 lms-form">
+
+            <!-- Full Name -->
+            <div class="col-12 col-md-6">
+                <label>Full Name</label>
+                <InputText class="form-control" @bind-Value="driver.FullName" />
+            </div>
+
+            <!-- Phone -->
+            <div class="col-12 col-md-6">
+                <label>Phone Number</label>
+                <InputText class="form-control" @bind-Value="driver.PhoneNumber" />
+            </div>
+
+            <!-- License -->
+            <div class="col-12 col-md-6">
+                <label>License Number</label>
+                <InputText class="form-control" @bind-Value="driver.LicenseNumber" />
+            </div>
+
+        </div>
+
+        <!-- BUTTONS -->
+        <div class="d-flex flex-wrap gap-2 mt-4">
+
+            <button class="btn btn-add" @onclick="Save">
+                + Save Driver
+            </button>
+
+            <button class="btn btn-secondary" @onclick="Cancel">
+                Cancel
+            </button>
+
+        </div>
+
     </div>
 
-    <div class="mb-2">
-        <label>License Number</label>
-        <InputText class="form-control" @bind-Value="driver.LicenseNumber" />
-    </div>
-
-    <button class="btn btn-success">Save</button>
-</EditForm>
+</div>
 
 @code {
-    Driver driver = new();
 
-    async Task Save()
+    private Driver driver = new();
+
+    private async Task Save()
     {
         await DriverService.Add(driver);
+        Nav.NavigateTo("/drivers");
+    }
+
+    private void Cancel()
+    {
         Nav.NavigateTo("/drivers");
     }
 }

@@ -1,66 +1,61 @@
 ﻿@page "/drivers/edit/{Id:int}"
+@attribute [Authorize]
 
 @using LoadManagementSystem_LMS_.Models
 @using LoadManagementSystem_LMS_.Services
+@using Microsoft.AspNetCore.Authorization
 
 @inject DriverService DriverService
 @inject NavigationManager Nav
 
-<h3>Edit Driver</h3>
+<div class="page-container">
 
-@if (driver == null)
-{
-    <p>Loading...</p>
-}
-else
-{
-    <EditForm Model="driver" OnValidSubmit="Update">
+    <div class="page-header">
+        <h2 class="page-title">Edit Driver</h2>
+    </div>
 
-        <DataAnnotationsValidator />
+    @if (driver == null)
+    {
+        <p>Loading...</p>
+    }
+    else
+    {
+        <EditForm Model="driver" OnValidSubmit="Update">
 
-        <div class="card p-4 shadow-sm">
+            <DataAnnotationsValidator />
 
-            <!-- FULL NAME -->
-            <div class="mb-2">
-                <label>Full Name</label>
-                <InputText class="form-control"
-                           @bind-Value="driver.FullName" />
-            </div>
+            <div class="lms-card lms-form">
 
-            <!-- PHONE -->
-            <div class="mb-2">
-                <label>Phone Number</label>
-                <InputText class="form-control"
-                           @bind-Value="driver.PhoneNumber" />
-            </div>
+                <div class="mb-3">
+                    <label>Full Name</label>
+                    <InputText class="form-control" @bind-Value="driver.FullName" />
+                </div>
 
-            <!-- LICENSE -->
-            <div class="mb-2">
-                <label>License Number</label>
-                <InputText class="form-control"
-                           @bind-Value="driver.LicenseNumber" />
-            </div>
+                <div class="mb-3">
+                    <label>Phone Number</label>
+                    <InputText class="form-control" @bind-Value="driver.PhoneNumber" />
+                </div>
 
-            <!-- BUTTONS -->
-            <div class="mt-3">
+                <div class="mb-3">
+                    <label>License Number</label>
+                    <InputText class="form-control" @bind-Value="driver.LicenseNumber" />
+                </div>
 
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn btn-lms-primary">
                     Update
                 </button>
 
-                <!-- ✅ CANCEL BUTTON -->
-                <button type="button"
-                        class="btn btn-secondary ms-2"
-                        @onclick="Cancel">
+                <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel">
                     Cancel
                 </button>
 
             </div>
 
-        </div>
+        </EditForm>
+    }
 
-    </EditForm>
-}
+</div>
+
 @code {
 
     [Parameter]
@@ -79,7 +74,6 @@ else
         Nav.NavigateTo("/drivers");
     }
 
-    // 🚀 CANCEL ACTION
     void Cancel()
     {
         Nav.NavigateTo("/drivers");
