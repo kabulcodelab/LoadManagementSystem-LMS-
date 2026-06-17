@@ -12,7 +12,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// services
 builder.Services.AddScoped<DriverService>();
+builder.Services.AddScoped<VehicleService>();
+builder.Services.AddScoped<CustomerService>();
+builder.Services.AddScoped<LoadService>();
+builder.Services.AddScoped<DocumentService>();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();

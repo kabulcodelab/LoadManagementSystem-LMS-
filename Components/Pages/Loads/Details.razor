@@ -1,0 +1,202 @@
+﻿@page "/loads/details/{Id:int}"
+
+@using LoadManagementSystem_LMS_.Models
+@using LoadManagementSystem_LMS_.Services
+
+@inject LoadService LoadService
+@inject DocumentService DocumentService
+
+<h3 class="mb-3">Load Details</h3>
+
+@if (load == null)
+{
+    <div class="alert alert-info">
+        Loading...
+    </div>
+}
+else
+{
+    <div class="card shadow-sm p-4">
+
+        <!-- HEADER -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+
+            <h4 class="mb-0">
+                Load #@load.LoadNumber
+            </h4>
+
+            <span class="@GetStatusClass(load.Status)">
+                @load.Status
+            </span>
+
+        </div>
+
+        <hr />
+
+        <!-- MAIN INFO -->
+        <div class="row">
+
+            <div class="col-md-6">
+                <p><b>Tracking Number:</b> @load.TrackingNumber</p>
+                <p><b>Customer:</b> @load.Customer?.Name</p>
+                <p><b>Driver:</b> @load.Driver?.FullName</p>
+                <p><b>Vehicle:</b> @load.Vehicle?.PlateNumber</p>
+            </div>
+
+            <div class="col-md-6">
+                <p><b>Weight:</b> @load.Weight</p>
+                <p><b>Price:</b> @load.Price</p>
+                <p><b>Pickup Date:</b> @load.PickupDate.ToShortDateString()</p>
+                <p><b>Delivery Date:</b> @(load.DeliveryDate?.ToShortDateString() ?? "-")</p>
+            </div>
+
+        </div>
+
+        <hr />
+
+        <!-- LOCATIONS -->
+        <div class="row">
+
+            <div class="col-md-6">
+                <h6>Pickup Location</h6>
+                <p>@load.PickupLocation</p>
+            </div>
+
+            <div class="col-md-6">
+                <h6>Delivery Location</h6>
+                <p>@load.DeliveryLocation</p>
+            </div>
+
+        </div>
+
+        <hr />
+
+        <!-- REMARKS -->
+        <div class="mb-3">
+            <h6>Remarks</h6>
+            <p>@load.Remarks</p>
+        </div>
+
+        <hr />
+
+        <!-- 📄 DOCUMENTS SECTION -->
+        <div class="mb-3">
+
+            <h5>📄 Documents</h5>
+
+            <InputFile OnChange="UploadFile" class="form-control mb-3" />
+
+            @if (documents == null)
+            {
+                <p>Loading files...</p>
+            }
+            else if (documents.Count == 0)
+            {
+                <p>No documents uploaded.</p>
+            }
+            else
+            {
+                <ul class="list-group">
+
+                    @foreach (var doc in documents)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+
+                            <span>@doc.FileName</span>
+
+                            <div>
+
+                                <a class="btn btn-sm btn-success"
+                                   href="@doc.FilePath"
+                                   target="_blank">
+                                    Download
+                                </a>
+
+                                <button class="btn btn-sm btn-danger ms-2"
+                                        @onclick="() => DeleteDoc(doc.Id)">
+                                    Delete
+                                </button>
+
+                            </div>
+
+                        </li>
+                    }
+
+                </ul>
+            }
+
+        </div>
+
+        <hr />
+
+        <!-- BUTTONS -->
+        <div class="mt-4">
+
+            <a class="btn btn-warning"
+               href="/loads/edit/@load.Id">
+                Edit
+            </a>
+
+            <a class="btn btn-secondary ms-2"
+               href="/loads">
+                Back
+            </a>
+
+        </div>
+
+    </div>
+}
+@code {
+
+    [Parameter]
+    public int Id { get; set; }
+
+    private Load? load;
+    private List<Document>? documents;
+
+    protected override async Task OnInitializedAsync()
+    {
+        load = await LoadService.GetById(Id);
+        documents = await DocumentService.GetByLoad(Id);
+    }
+
+    // 🎨 STATUS BADGE
+    string GetStatusClass(LoadStatus status)
+    {
+        return status switch
+        {
+            LoadStatus.Pending => "badge bg-secondary",
+            LoadStatus.Assigned => "badge bg-primary",
+            LoadStatus.PickedUp => "badge bg-info",
+            LoadStatus.InTransit => "badge bg-warning text-dark",
+            LoadStatus.Delivered => "badge bg-success",
+            LoadStatus.Cancelled => "badge bg-danger",
+            _ => "badge bg-dark"
+        };
+    }
+
+    // 📤 Upload file
+    private async Task UploadFile(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        using var stream = file.OpenReadStream(10 * 1024 * 1024);
+
+        var formFile = new FormFile(stream, 0, file.Size, file.Name, file.Name)
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = file.ContentType
+        };
+
+        await DocumentService.Upload(formFile, Id);
+
+        documents = await DocumentService.GetByLoad(Id);
+    }
+
+    // 🗑 Delete document
+    private async Task DeleteDoc(int docId)
+    {
+        await DocumentService.Delete(docId);
+        documents = await DocumentService.GetByLoad(Id);
+    }
+}

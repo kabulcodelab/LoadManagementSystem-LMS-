@@ -15,27 +15,56 @@
 else
 {
     <EditForm Model="driver" OnValidSubmit="Update">
-        <div class="mb-2">
-            <label>Full Name</label>
-            <InputText class="form-control" @bind-Value="driver.FullName" />
+
+        <DataAnnotationsValidator />
+
+        <div class="card p-4 shadow-sm">
+
+            <!-- FULL NAME -->
+            <div class="mb-2">
+                <label>Full Name</label>
+                <InputText class="form-control"
+                           @bind-Value="driver.FullName" />
+            </div>
+
+            <!-- PHONE -->
+            <div class="mb-2">
+                <label>Phone Number</label>
+                <InputText class="form-control"
+                           @bind-Value="driver.PhoneNumber" />
+            </div>
+
+            <!-- LICENSE -->
+            <div class="mb-2">
+                <label>License Number</label>
+                <InputText class="form-control"
+                           @bind-Value="driver.LicenseNumber" />
+            </div>
+
+            <!-- BUTTONS -->
+            <div class="mt-3">
+
+                <button type="submit" class="btn btn-primary">
+                    Update
+                </button>
+
+                <!-- ✅ CANCEL BUTTON -->
+                <button type="button"
+                        class="btn btn-secondary ms-2"
+                        @onclick="Cancel">
+                    Cancel
+                </button>
+
+            </div>
+
         </div>
 
-        <div class="mb-2">
-            <label>Phone Number</label>
-            <InputText class="form-control" @bind-Value="driver.PhoneNumber" />
-        </div>
-
-        <div class="mb-2">
-            <label>License Number</label>
-            <InputText class="form-control" @bind-Value="driver.LicenseNumber" />
-        </div>
-
-        <button class="btn btn-primary">Update</button>
     </EditForm>
 }
-
 @code {
-    [Parameter] public int Id { get; set; }
+
+    [Parameter]
+    public int Id { get; set; }
 
     Driver? driver;
 
@@ -47,6 +76,12 @@ else
     async Task Update()
     {
         await DriverService.Update(driver!);
+        Nav.NavigateTo("/drivers");
+    }
+
+    // 🚀 CANCEL ACTION
+    void Cancel()
+    {
         Nav.NavigateTo("/drivers");
     }
 }

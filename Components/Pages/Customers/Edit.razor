@@ -1,0 +1,88 @@
+﻿@page "/customers/edit/{Id:int}"
+
+@using LoadManagementSystem_LMS_.Models
+@using LoadManagementSystem_LMS_.Services
+
+@inject CustomerService CustomerService
+@inject NavigationManager Navigation
+
+<h3>Edit Customer</h3>
+
+@if (customer == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <EditForm Model="customer" OnValidSubmit="Update">
+
+        <DataAnnotationsValidator />
+
+        <div class="mb-3">
+            <label>Customer Code</label>
+            <InputText class="form-control"
+                       @bind-Value="customer.CustomerCode" />
+        </div>
+
+        <div class="mb-3">
+            <label>Name</label>
+            <InputText class="form-control"
+                       @bind-Value="customer.Name" />
+        </div>
+
+        <div class="mb-3">
+            <label>Phone Number</label>
+            <InputText class="form-control"
+                       @bind-Value="customer.PhoneNumber" />
+        </div>
+
+        <div class="mb-3">
+            <label>Email</label>
+            <InputText class="form-control"
+                       @bind-Value="customer.Email" />
+        </div>
+
+        <div class="mb-3">
+            <label>Address</label>
+            <InputText class="form-control"
+                       @bind-Value="customer.Address" />
+        </div>
+
+        <div class="form-check mb-3">
+            <InputCheckbox class="form-check-input"
+                           @bind-Value="customer.IsActive" />
+            <label class="form-check-label">
+                Active
+            </label>
+        </div>
+
+        <button class="btn btn-primary">
+            Update
+        </button>
+
+        <a class="btn btn-secondary ms-2"
+           href="/customers">
+            Cancel
+        </a>
+
+    </EditForm>
+}
+
+@code {
+
+    [Parameter]
+    public int Id { get; set; }
+
+    private Customer? customer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        customer = await CustomerService.GetById(Id);
+    }
+
+    private async Task Update()
+    {
+        await CustomerService.Update(customer!);
+        Navigation.NavigateTo("/customers");
+    }
+}

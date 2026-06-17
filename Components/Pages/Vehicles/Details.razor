@@ -1,0 +1,144 @@
+﻿@page "/vehicles/details/{Id:int}"
+
+@using LoadManagementSystem_LMS_.Models
+@using LoadManagementSystem_LMS_.Services
+
+@inject VehicleService VehicleService
+
+<h3 class="mb-3">Vehicle Details</h3>
+
+@if (vehicle == null)
+{
+    <div class="alert alert-info">
+        Loading...
+    </div>
+}
+else
+{
+    <!-- VEHICLE INFO -->
+    <div class="card shadow-sm p-4 mb-3">
+
+        <h4>@vehicle.VehicleCode</h4>
+
+        <hr />
+
+        <div class="row">
+
+            <div class="col-md-6">
+                <p><b>Plate Number:</b> @vehicle.PlateNumber</p>
+                <p><b>Model:</b> @vehicle.Model</p>
+                <p><b>Type:</b> @vehicle.VehicleType</p>
+            </div>
+
+            <div class="col-md-6">
+                <p><b>Capacity:</b> @vehicle.Capacity</p>
+                <p><b>Year:</b> @vehicle.ManufactureYear</p>
+
+                <p>
+                    <b>Status:</b>
+                    <span class="badge @(vehicle.IsActive ? "bg-success" : "bg-danger")">
+                        @(vehicle.IsActive ? "Active" : "Inactive")
+                    </span>
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- LOAD HISTORY -->
+    <div class="card shadow-sm p-4">
+
+        <h5>🚚 Load History</h5>
+
+        @if (loads == null || loads.Count == 0)
+        {
+            <p>No loads found for this vehicle.</p>
+        }
+        else
+        {
+            <table class="table table-striped">
+
+                <thead class="table-dark">
+                    <tr>
+                        <th>Load No</th>
+                        <th>Tracking</th>
+                        <th>Customer</th>
+                        <th>Status</th>
+                        <th>Pickup Date</th>
+                        <th>Delivery Date</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var l in loads)
+                    {
+                        <tr>
+                            <td>@l.LoadNumber</td>
+                            <td>@l.TrackingNumber</td>
+                            <td>@l.Customer?.Name</td>
+
+                            <td>
+                                <span class="@GetStatusClass(l.Status)">
+                                    @l.Status
+                                </span>
+                            </td>
+
+                            <td>@l.PickupDate.ToShortDateString()</td>
+
+                            <td>
+                                @(l.DeliveryDate?.ToShortDateString() ?? "-")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+
+            </table>
+        }
+
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="mt-3">
+
+        <a class="btn btn-warning"
+           href="/vehicles/edit/@vehicle.Id">
+            Edit
+        </a>
+
+        <a class="btn btn-secondary ms-2"
+           href="/vehicles">
+            Back
+        </a>
+
+    </div>
+}
+@code {
+
+    [Parameter]
+    public int Id { get; set; }
+
+    private Vehicle? vehicle;
+    private List<Load>? loads;
+
+    protected override async Task OnInitializedAsync()
+    {
+        vehicle = await VehicleService.GetById(Id);
+
+        loads = await VehicleService.GetVehicleLoads(Id);
+    }
+
+    string GetStatusClass(LoadStatus status)
+    {
+        return status switch
+        {
+            LoadStatus.Pending => "badge bg-secondary",
+            LoadStatus.Assigned => "badge bg-primary",
+            LoadStatus.PickedUp => "badge bg-info",
+            LoadStatus.InTransit => "badge bg-warning text-dark",
+            LoadStatus.Delivered => "badge bg-success",
+            LoadStatus.Cancelled => "badge bg-danger",
+            _ => "badge bg-dark"
+        };
+    }
+}

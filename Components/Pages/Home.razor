@@ -1,8 +1,160 @@
 ﻿@page "/"
-@using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
-<PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+@using LoadManagementSystem_LMS_.Data
+@using LoadManagementSystem_LMS_.Models
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
 
-Welcome to your new app.
+@inject ApplicationDbContext Db
+
+<PageTitle>Dashboard</PageTitle>
+
+<!-- HEADER -->
+<div class="mb-4">
+    <h2 class="fw-bold">🚚 Load Management Dashboard</h2>
+    <p class="text-muted">Real-time overview of logistics operations</p>
+</div>
+
+<!-- LOAD KPI -->
+<div class="row g-3">
+
+    <div class="col-md-3">
+        <div class="card kpi-card border-start border-primary border-4 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted">Total Loads</h6>
+                    <h3>@totalLoads</h3>
+                </div>
+                <div class="kpi-icon">🚚</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card kpi-card border-start border-warning border-4 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted">Pending</h6>
+                    <h3>@pendingLoads</h3>
+                </div>
+                <div class="kpi-icon">⏳</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card kpi-card border-start border-success border-4 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted">Delivered</h6>
+                    <h3>@deliveredLoads</h3>
+                </div>
+                <div class="kpi-icon">✅</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card kpi-card border-start border-info border-4 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted">Revenue</h6>
+                    <h3>$@totalRevenue</h3>
+                </div>
+                <div class="kpi-icon">💰</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- SECOND ROW -->
+<div class="row g-3 mt-3">
+
+    <div class="col-md-4">
+        <div class="card kpi-card shadow-sm">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted">Drivers</h6>
+                    <h3>@drivers</h3>
+                </div>
+                <div class="kpi-icon">👨‍✈️</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card kpi-card shadow-sm">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted">Vehicles</h6>
+                    <h3>@vehicles</h3>
+                </div>
+                <div class="kpi-icon">🚛</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card kpi-card shadow-sm">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted">Customers</h6>
+                    <h3>@customers</h3>
+                </div>
+                <div class="kpi-icon">🏢</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- STYLE -->
+<style>
+    .kpi-card {
+        border-radius: 14px;
+        padding: 16px;
+        transition: all 0.2s ease-in-out;
+        background: #fff;
+    }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        }
+
+    .kpi-icon {
+        font-size: 32px;
+        opacity: 0.85;
+    }
+</style>
+
+<!-- CODE -->
+@code {
+
+    private int totalLoads;
+    private int pendingLoads;
+    private int deliveredLoads;
+    private int drivers;
+    private int vehicles;
+    private int customers;
+    private decimal totalRevenue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        totalLoads = await Db.Loads.CountAsync();
+
+        pendingLoads = await Db.Loads.CountAsync(x => x.Status == LoadStatus.Pending);
+
+        deliveredLoads = await Db.Loads.CountAsync(x => x.Status == LoadStatus.Delivered);
+
+        drivers = await Db.Drivers.CountAsync();
+        vehicles = await Db.Vehicles.CountAsync();
+        customers = await Db.Customers.CountAsync();
+
+        totalRevenue = await Db.Loads
+            .Where(x => x.Status == LoadStatus.Delivered)
+            .SumAsync(x => x.Price);
+    }
+}

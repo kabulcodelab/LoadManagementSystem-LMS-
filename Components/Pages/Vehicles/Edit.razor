@@ -1,0 +1,96 @@
+﻿@page "/vehicles/edit/{Id:int}"
+
+@using LoadManagementSystem_LMS_.Models
+@using LoadManagementSystem_LMS_.Services
+
+@inject VehicleService VehicleService
+@inject NavigationManager Navigation
+
+<h3>Edit Vehicle</h3>
+
+@if (vehicle == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <EditForm Model="vehicle"
+              OnValidSubmit="Update">
+
+        <DataAnnotationsValidator />
+
+        <div class="mb-3">
+            <label>Vehicle Code</label>
+            <InputText class="form-control"
+                       @bind-Value="vehicle.VehicleCode" />
+        </div>
+
+        <div class="mb-3">
+            <label>Plate Number</label>
+            <InputText class="form-control"
+                       @bind-Value="vehicle.PlateNumber" />
+        </div>
+
+        <div class="mb-3">
+            <label>Model</label>
+            <InputText class="form-control"
+                       @bind-Value="vehicle.Model" />
+        </div>
+
+        <div class="mb-3">
+            <label>Vehicle Type</label>
+            <InputText class="form-control"
+                       @bind-Value="vehicle.VehicleType" />
+        </div>
+
+        <div class="mb-3">
+            <label>Capacity</label>
+            <InputNumber class="form-control"
+                         @bind-Value="vehicle.Capacity" />
+        </div>
+
+        <div class="mb-3">
+            <label>Manufacture Year</label>
+            <InputNumber class="form-control"
+                         @bind-Value="vehicle.ManufactureYear" />
+        </div>
+
+        <div class="form-check mb-3">
+            <InputCheckbox class="form-check-input"
+                           @bind-Value="vehicle.IsActive" />
+            <label class="form-check-label">
+                Active
+            </label>
+        </div>
+
+        <button class="btn btn-primary">
+            Update
+        </button>
+
+        <a class="btn btn-secondary ms-2"
+           href="/vehicles">
+            Cancel
+        </a>
+
+    </EditForm>
+}
+
+@code {
+
+    [Parameter]
+    public int Id { get; set; }
+
+    private Vehicle? vehicle;
+
+    protected override async Task OnInitializedAsync()
+    {
+        vehicle = await VehicleService.GetById(Id);
+    }
+
+    private async Task Update()
+    {
+        await VehicleService.Update(vehicle!);
+
+        Navigation.NavigateTo("/vehicles");
+    }
+}

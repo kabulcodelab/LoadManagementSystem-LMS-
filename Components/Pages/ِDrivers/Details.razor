@@ -1,0 +1,135 @@
+﻿@page "/drivers/details/{Id:int}"
+
+@using LoadManagementSystem_LMS_.Models
+@using LoadManagementSystem_LMS_.Services
+
+@inject DriverService DriverService
+
+<h3 class="mb-3">Driver Details</h3>
+
+@if (driver == null)
+{
+    <div class="alert alert-info">
+        Loading...
+    </div>
+}
+else
+{
+    <div class="card shadow-sm p-4">
+
+        <!-- DRIVER INFO -->
+        <h4>@driver.FullName</h4>
+
+        <hr />
+
+        <div class="row">
+
+            <div class="col-md-6">
+                <p><b>Phone:</b> @driver.PhoneNumber</p>
+                <p><b>License:</b> @driver.LicenseNumber</p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <br />
+
+    <!-- LOAD HISTORY -->
+    <div class="card shadow-sm p-4">
+
+        <h5>🚚 Load History</h5>
+
+        @if (loads == null || loads.Count == 0)
+        {
+            <p>No loads found for this driver.</p>
+        }
+        else
+        {
+            <table class="table table-striped">
+
+                <thead>
+                    <tr>
+                        <th>Load No</th>
+                        <th>Tracking</th>
+                        <th>Status</th>
+                        <th>Pickup Date</th>
+                        <th>Delivery Date</th>
+                        <th>Price</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var l in loads)
+                    {
+                        <tr>
+                            <td>@l.LoadNumber</td>
+                            <td>@l.TrackingNumber</td>
+
+                            <td>
+                                <span class="@GetStatusClass(l.Status)">
+                                    @l.Status
+                                </span>
+                            </td>
+
+                            <td>@l.PickupDate.ToShortDateString()</td>
+
+                            <td>
+                                @(l.DeliveryDate?.ToShortDateString() ?? "-")
+                            </td>
+
+                            <td>@l.Price</td>
+                        </tr>
+                    }
+                </tbody>
+
+            </table>
+        }
+
+    </div>
+    <!-- ACTION BUTTONS -->
+    <div class="mt-4">
+
+        <a class="btn btn-warning"
+           href="/drivers/edit/@driver.Id">
+            Edit
+        </a>
+
+        <a class="btn btn-secondary ms-2"
+           href="/drivers">
+            Back
+        </a>
+
+    </div>
+}
+@code {
+
+    [Parameter]
+    public int Id { get; set; }
+
+    private Driver? driver;
+    private List<Load>? loads;
+
+    protected override async Task OnInitializedAsync()
+    {
+        driver = await DriverService.GetById(Id);
+
+        // 🔥 GET DRIVER LOAD HISTORY
+        loads = await DriverService.GetDriverLoads(Id);
+    }
+
+    // 🎨 STATUS BADGE
+    string GetStatusClass(LoadStatus status)
+    {
+        return status switch
+        {
+            LoadStatus.Pending => "badge bg-secondary",
+            LoadStatus.Assigned => "badge bg-primary",
+            LoadStatus.PickedUp => "badge bg-info",
+            LoadStatus.InTransit => "badge bg-warning text-dark",
+            LoadStatus.Delivered => "badge bg-success",
+            LoadStatus.Cancelled => "badge bg-danger",
+            _ => "badge bg-dark"
+        };
+    }
+}

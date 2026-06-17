@@ -1,0 +1,81 @@
+﻿@page "/vehicles/create"
+
+@using LoadManagementSystem_LMS_.Models
+@using LoadManagementSystem_LMS_.Services
+
+@inject VehicleService VehicleService
+@inject NavigationManager Navigation
+
+<h3>Add Vehicle</h3>
+
+<EditForm Model="vehicle"
+          OnValidSubmit="Save">
+
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label>Vehicle Code</label>
+        <InputText class="form-control"
+                   @bind-Value="vehicle.VehicleCode" />
+    </div>
+
+    <div class="mb-3">
+        <label>Plate Number</label>
+        <InputText class="form-control"
+                   @bind-Value="vehicle.PlateNumber" />
+    </div>
+
+    <div class="mb-3">
+        <label>Model</label>
+        <InputText class="form-control"
+                   @bind-Value="vehicle.Model" />
+    </div>
+
+    <div class="mb-3">
+        <label>Vehicle Type</label>
+        <InputText class="form-control"
+                   @bind-Value="vehicle.VehicleType" />
+    </div>
+
+    <div class="mb-3">
+        <label>Capacity</label>
+        <InputNumber class="form-control"
+                     @bind-Value="vehicle.Capacity" />
+    </div>
+
+    <div class="mb-3">
+        <label>Manufacture Year</label>
+        <InputNumber class="form-control"
+                     @bind-Value="vehicle.ManufactureYear" />
+    </div>
+
+    <div class="form-check mb-3">
+        <InputCheckbox class="form-check-input"
+                       @bind-Value="vehicle.IsActive" />
+        <label class="form-check-label">
+            Active
+        </label>
+    </div>
+
+    <button class="btn btn-success">
+        Save
+    </button>
+
+    <a class="btn btn-secondary ms-2"
+       href="/vehicles">
+        Cancel
+    </a>
+
+</EditForm>
+
+@code {
+
+    private Vehicle vehicle = new();
+
+    private async Task Save()
+    {
+        await VehicleService.Add(vehicle);
+
+        Navigation.NavigateTo("/vehicles");
+    }
+}

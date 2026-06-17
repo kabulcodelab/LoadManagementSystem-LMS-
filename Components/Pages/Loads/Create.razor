@@ -1,0 +1,179 @@
+﻿@page "/loads/create"
+
+@using LoadManagementSystem_LMS_.Models
+@using LoadManagementSystem_LMS_.Services
+
+@inject LoadService LoadService
+@inject CustomerService CustomerService
+@inject DriverService DriverService
+@inject VehicleService VehicleService
+@inject NavigationManager Navigation
+
+<h3>Create Load</h3>
+
+<EditForm Model="load" OnValidSubmit="Save">
+
+    <DataAnnotationsValidator />
+
+    <div class="card p-4 shadow-sm">
+
+        <!-- Load Info -->
+        <div class="row">
+
+            <div class="col-md-6 mb-3">
+                <label>Load Number</label>
+                <InputText class="form-control"
+                           @bind-Value="load.LoadNumber" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label>Tracking Number</label>
+                <InputText class="form-control"
+                           @bind-Value="load.TrackingNumber" />
+            </div>
+
+        </div>
+
+        <!-- Customer / Driver / Vehicle -->
+        <div class="row">
+
+            <div class="col-md-4 mb-3">
+                <label>Customer</label>
+                <InputSelect class="form-select"
+                             @bind-Value="load.CustomerId">
+                    <option value="0">Select Customer</option>
+
+                    @foreach (var c in customers)
+                    {
+                        <option value="@c.Id">@c.Name</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <label>Driver</label>
+                <InputSelect class="form-select"
+                             @bind-Value="load.DriverId">
+                    <option value="0">Select Driver</option>
+
+                    @foreach (var d in drivers)
+                    {
+                        <option value="@d.Id">@d.FullName</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <label>Vehicle</label>
+                <InputSelect class="form-select"
+                             @bind-Value="load.VehicleId">
+                    <option value="0">Select Vehicle</option>
+
+                    @foreach (var v in vehicles)
+                    {
+                        <option value="@v.Id">@v.PlateNumber</option>
+                    }
+                </InputSelect>
+            </div>
+
+        </div>
+
+        <!-- Locations -->
+        <div class="row">
+
+            <div class="col-md-6 mb-3">
+                <label>Pickup Location</label>
+                <InputText class="form-control"
+                           @bind-Value="load.PickupLocation" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label>Delivery Location</label>
+                <InputText class="form-control"
+                           @bind-Value="load.DeliveryLocation" />
+            </div>
+
+        </div>
+
+        <!-- Weight / Price -->
+        <div class="row">
+
+            <div class="col-md-6 mb-3">
+                <label>Weight</label>
+                <InputNumber class="form-control"
+                             @bind-Value="load.Weight" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label>Price</label>
+                <InputNumber class="form-control"
+                             @bind-Value="load.Price" />
+            </div>
+
+        </div>
+
+        <!-- Dates -->
+        <div class="row">
+
+            <div class="col-md-6 mb-3">
+                <label>Pickup Date</label>
+                <InputDate class="form-control"
+                           @bind-Value="load.PickupDate" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label>Delivery Date</label>
+                <InputDate class="form-control"
+                           @bind-Value="load.DeliveryDate" />
+            </div>
+
+        </div>
+
+        <!-- Remarks -->
+        <div class="mb-3">
+            <label>Remarks</label>
+            <InputTextArea class="form-control"
+                           @bind-Value="load.Remarks" />
+        </div>
+
+        <!-- Buttons -->
+        <div class="mt-3">
+            <button class="btn btn-success" type="submit">
+                Save Load
+            </button>
+
+            <a class="btn btn-secondary ms-2" href="/loads">
+                Cancel
+            </a>
+        </div>
+
+    </div>
+
+</EditForm>
+
+@code {
+
+    private Load load = new();
+
+    private List<Customer> customers = new();
+    private List<Driver> drivers = new();
+    private List<Vehicle> vehicles = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        customers = await CustomerService.GetAll();
+        drivers = await DriverService.GetAll();
+        vehicles = await VehicleService.GetAll();
+
+        load.PickupDate = DateTime.Today;
+
+        // ✅ مهم‌ترین اصلاح: جلوگیری از 0 شدن Status
+        load.Status = LoadStatus.Pending;
+    }
+
+    private async Task Save()
+    {
+        await LoadService.Add(load);
+        Navigation.NavigateTo("/loads");
+    }
+}
