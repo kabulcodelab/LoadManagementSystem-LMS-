@@ -301,7 +301,6 @@ label {
         color: white;
         transform: translateY(-1px);
     }
-
 /* =========================================
    RESPONSIVE HELPERS
 ========================================= */
@@ -320,12 +319,13 @@ label {
         padding: .75rem;
     }
 
-    .btn {
+    /* Only apply full width to large buttons, not small ones (like action buttons) */
+    .btn:not(.btn-sm) {
         width: 100%;
         margin-bottom: .5rem;
     }
 
-        .btn + .btn {
+        .btn:not(.btn-sm) + .btn:not(.btn-sm) {
             margin-left: 0 !important;
         }
 }
