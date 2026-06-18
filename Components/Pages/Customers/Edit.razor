@@ -1,7 +1,8 @@
 ﻿@page "/customers/edit/{Id:int}"
-
+@attribute [Authorize]
 @using LoadManagementSystem_LMS_.Models
 @using LoadManagementSystem_LMS_.Services
+@using Microsoft.AspNetCore.Authorization
 
 @inject CustomerService CustomerService
 @inject NavigationManager Navigation

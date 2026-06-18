@@ -1,7 +1,8 @@
 ﻿@page "/loads/create"
-
+@attribute [Authorize]
 @using LoadManagementSystem_LMS_.Models
 @using LoadManagementSystem_LMS_.Services
+@using Microsoft.AspNetCore.Authorization
 
 @inject LoadService LoadService
 @inject CustomerService CustomerService
