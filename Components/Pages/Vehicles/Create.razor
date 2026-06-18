@@ -1,11 +1,14 @@
 ﻿@page "/vehicles/create"
 @attribute [Authorize]
+
 @using LoadManagementSystem_LMS_.Models
 @using LoadManagementSystem_LMS_.Services
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
 
 @inject VehicleService VehicleService
-@inject NavigationManager Navigation
+@inject DriverService DriverService
+@inject NavigationManager Nav
 
 <PageTitle>Create Vehicle</PageTitle>
 
@@ -16,86 +19,266 @@
         <div class="page-subtitle">Add a new vehicle to the system</div>
     </div>
 
-    <EditForm Model="@vehicle" OnValidSubmit="Save">
-
-        <DataAnnotationsValidator />
-        <ValidationSummary />
-
-        <div class="lms-card lms-form">
-
-            <!-- Vehicle Code -->
-            <div class="mb-3">
-                <label>Vehicle Code</label>
-                <InputText class="form-control" @bind-Value="vehicle.VehicleCode" />
-            </div>
-
-            <!-- Plate -->
-            <div class="mb-3">
-                <label>Plate Number</label>
-                <InputText class="form-control" @bind-Value="vehicle.PlateNumber" />
-            </div>
-
-            <!-- Model -->
-            <div class="mb-3">
-                <label>Model</label>
-                <InputText class="form-control" @bind-Value="vehicle.Model" />
-            </div>
-
-            <!-- Type -->
-            <div class="mb-3">
-                <label>Vehicle Type</label>
-                <InputText class="form-control" @bind-Value="vehicle.VehicleType" />
-            </div>
-
-            <div class="row">
-
-                <div class="col-md-6 mb-3">
-                    <label>Capacity</label>
-                    <InputNumber class="form-control" @bind-Value="vehicle.Capacity" />
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label>Manufacture Year</label>
-                    <InputNumber class="form-control" @bind-Value="vehicle.ManufactureYear" />
-                </div>
-
-            </div>
-
-            <!-- Active -->
-            <div class="form-check mb-3">
-                <InputCheckbox class="form-check-input"
-                               @bind-Value="vehicle.IsActive" />
-                <label class="form-check-label">
-                    Active Vehicle
-                </label>
-            </div>
-
-            <!-- Buttons -->
-            <div class="d-flex gap-2 mt-3">
-
-                <button type="submit" class="btn btn-add">
-                    Save Vehicle
-                </button>
-
-                <a class="btn btn-secondary" href="/vehicles">
-                    Cancel
-                </a>
-
-            </div>
-
+    <!-- Alert -->
+    @if (ShowAlert)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <strong>Success!</strong> @AlertMessage
+            <button type="button" class="btn-close" @onclick="CloseAlert" aria-label="Close"></button>
         </div>
+    }
 
-    </EditForm>
+    <div class="lms-card">
+
+        <EditForm Model="@vehicle" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="alert alert-danger" />
+
+            <div class="row g-3 lms-form">
+
+                <!-- Vehicle Code (auto-generated, read-only) -->
+                <div class="col-12 col-md-4">
+                    <label>Vehicle Code</label>
+                    <InputText class="form-control" @bind-Value="vehicle.VehicleCode" disabled />
+                    <small class="text-muted">Auto‑generated if left empty</small>
+                </div>
+
+                <!-- Plate Number (Required) -->
+                <div class="col-12 col-md-4">
+                    <label>Plate Number *</label>
+                    <InputText class="form-control" @bind-Value="vehicle.PlateNumber" />
+                    <ValidationMessage For="@(() => vehicle.PlateNumber)" />
+                </div>
+
+                <!-- VIN (Required, 17 chars) -->
+                <div class="col-12 col-md-4">
+                    <label>VIN (Chassis Number) </label>
+                    <InputText class="form-control" @bind-Value="vehicle.VIN" />
+                    <ValidationMessage For="@(() => vehicle.VIN)" />
+                </div>
+
+                <!-- Engine Number (Optional) -->
+                <div class="col-12 col-md-4">
+                    <label>Engine Number</label>
+                    <InputText class="form-control" @bind-Value="vehicle.EngineNumber" />
+                </div>
+
+                <!-- Model (Required) -->
+                <div class="col-12 col-md-4">
+                    <label>Model *</label>
+                    <InputText class="form-control" @bind-Value="vehicle.Model" />
+                    <ValidationMessage For="@(() => vehicle.Model)" />
+                </div>
+
+                <!-- Vehicle Type (Required) -->
+                <div class="col-12 col-md-4">
+                    <label>Vehicle Type *</label>
+                    <InputText class="form-control" @bind-Value="vehicle.VehicleType" />
+                    <ValidationMessage For="@(() => vehicle.VehicleType)" />
+                </div>
+
+                <!-- Color (Optional) -->
+                <div class="col-12 col-md-4">
+                    <label>Color</label>
+                    <InputText class="form-control" @bind-Value="vehicle.Color" />
+                </div>
+
+                <!-- Capacity (Required) -->
+                <div class="col-12 col-md-4">
+                    <label>Capacity * (kg)</label>
+                    <InputNumber class="form-control" @bind-Value="vehicle.Capacity" />
+                    <ValidationMessage For="@(() => vehicle.Capacity)" />
+                </div>
+
+                <!-- Capacity Unit (Optional) -->
+                <div class="col-12 col-md-4">
+                    <label>Capacity Unit</label>
+                    <InputSelect class="form-select" @bind-Value="vehicle.CapacityUnit">
+                        <option value="kg">kg</option>
+                        <option value="tons">tons</option>
+                        <option value="lb">lb</option>
+                    </InputSelect>
+                </div>
+
+                <!-- Manufacture Year (Required) -->
+                <div class="col-12 col-md-4">
+                    <label>Manufacture Year </label>
+                    <InputNumber class="form-control" @bind-Value="vehicle.ManufactureYear" />
+                    <ValidationMessage For="@(() => vehicle.ManufactureYear)" />
+                </div>
+
+                <!-- Status (Optional, default Available) -->
+                <div class="col-12 col-md-4">
+                    <label>Status</label>
+                    <InputSelect class="form-select" @bind-Value="vehicle.Status">
+                        @foreach (VehicleStatus status in Enum.GetValues(typeof(VehicleStatus)))
+                        {
+                            <option value="@status">@status.ToString()</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <!-- Current Odometer (Optional) -->
+                <div class="col-12 col-md-4">
+                    <label>Current Odometer (km)</label>
+                    <InputNumber class="form-control" @bind-Value="vehicle.CurrentOdometer" />
+                </div>
+
+                <!-- Last Service Date (Optional) -->
+                <div class="col-12 col-md-4">
+                    <label>Last Service Date</label>
+                    <InputDate class="form-control" @bind-Value="vehicle.LastServiceDate" />
+                </div>
+
+                <!-- Last Service Odometer (Optional) -->
+                <div class="col-12 col-md-4">
+                    <label>Last Service Odometer (km)</label>
+                    <InputNumber class="form-control" @bind-Value="vehicle.LastServiceOdometer" />
+                </div>
+
+                <!-- Fuel Consumption (Optional) -->
+                <div class="col-12 col-md-4">
+                    <label>Fuel Consumption (L/100km)</label>
+                    <InputNumber class="form-control" @bind-Value="vehicle.FuelConsumption" />
+                </div>
+
+                <!-- Cost Per Km (Optional) -->
+                <div class="col-12 col-md-4">
+                    <label>Cost Per Km</label>
+                    <InputNumber class="form-control" @bind-Value="vehicle.CostPerKm" />
+                </div>
+
+                <!-- Purchase Date (Optional) -->
+                <div class="col-12 col-md-4">
+                    <label>Purchase Date</label>
+                    <InputDate class="form-control" @bind-Value="vehicle.PurchaseDate" />
+                </div>
+
+                <!-- Purchase Price (Optional) -->
+                <div class="col-12 col-md-4">
+                    <label>Purchase Price</label>
+                    <InputNumber class="form-control" @bind-Value="vehicle.PurchasePrice" />
+                </div>
+
+                <!-- Warranty Expiry Date (Optional) -->
+                <div class="col-12 col-md-4">
+                    <label>Warranty Expiry Date</label>
+                    <InputDate class="form-control" @bind-Value="vehicle.WarrantyExpiryDate" />
+                </div>
+
+                <!-- Inspection Expiry Date (Optional) -->
+                <div class="col-12 col-md-4">
+                    <label>Inspection Expiry Date</label>
+                    <InputDate class="form-control" @bind-Value="vehicle.InspectionExpiryDate" />
+                </div>
+
+                <!-- Insurance Expiry Date (Optional) -->
+                <div class="col-12 col-md-4">
+                    <label>Insurance Expiry Date</label>
+                    <InputDate class="form-control" @bind-Value="vehicle.InsuranceExpiryDate" />
+                </div>
+
+                <!-- Current Driver (Optional) -->
+                <div class="col-12 col-md-4">
+                    <label>Current Driver</label>
+                    <InputSelect class="form-select" @bind-Value="vehicle.CurrentDriverId">
+                        <option value="">None</option>
+                        @foreach (var driver in drivers)
+                        {
+                            <option value="@driver.Id">@driver.FullName - @driver.DriverCode</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <!-- Is Active (Optional) -->
+                <div class="col-12 col-md-4 d-flex align-items-center">
+                    <div class="form-check">
+                        <InputCheckbox class="form-check-input" @bind-Value="vehicle.IsActive" />
+                        <label class="form-check-label">Active</label>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 mt-4">
+                <button type="submit" class="btn btn-add">Save Vehicle</button>
+                <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+            </div>
+
+        </EditForm>
+
+    </div>
 
 </div>
 
 @code {
-
     private Vehicle vehicle = new();
+    private List<Driver> drivers = new();
 
-    private async Task Save()
+    // Alert properties
+    private bool ShowAlert = false;
+    private string AlertMessage = string.Empty;
+    private CancellationTokenSource? _alertCts;
+
+    protected override async Task OnInitializedAsync()
     {
-        await VehicleService.Add(vehicle);
-        Navigation.NavigateTo("/vehicles");
+        // Load active drivers for the dropdown
+        var allDrivers = await DriverService.GetAll();
+        drivers = allDrivers.Where(d => d.IsActive).ToList();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            await VehicleService.Add(vehicle);
+
+            ShowAlertMessage($"Vehicle '{vehicle.PlateNumber}' was added successfully!");
+
+            // Wait 1 second then navigate to list
+            await Task.Delay(1000);
+            Nav.NavigateTo("/vehicles");
+        }
+        catch (Exception ex)
+        {
+            ShowAlertMessage($"Error: {ex.Message}");
+        }
+    }
+
+    private void ShowAlertMessage(string message)
+    {
+        _alertCts?.Cancel();
+        _alertCts = new CancellationTokenSource();
+
+        AlertMessage = message;
+        ShowAlert = true;
+        StateHasChanged();
+
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(1000, _alertCts.Token);
+            if (!_alertCts.Token.IsCancellationRequested)
+            {
+                await InvokeAsync(() =>
+                {
+                    ShowAlert = false;
+                    AlertMessage = string.Empty;
+                    StateHasChanged();
+                });
+            }
+        });
+    }
+
+    private void CloseAlert()
+    {
+        _alertCts?.Cancel();
+        ShowAlert = false;
+        AlertMessage = string.Empty;
+        StateHasChanged();
+    }
+
+    private void Cancel()
+    {
+        Nav.NavigateTo("/vehicles");
     }
 }

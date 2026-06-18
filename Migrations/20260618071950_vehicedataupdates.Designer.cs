@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace LoadManagementSystem_LMS_.Migrations
+namespace LoadManagementSystemLMS.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260616054306_InitialLMSdb")]
-    partial class InitialLMSdb
+    [Migration("20260618071950_vehicedataupdates")]
+    partial class vehicedataupdates
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -144,10 +144,6 @@ namespace LoadManagementSystem_LMS_.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -156,8 +152,9 @@ namespace LoadManagementSystem_LMS_.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<long>("FileSize")
-                        .HasColumnType("bigint");
+                    b.Property<string>("FileType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("LoadId")
                         .HasColumnType("int");
@@ -180,18 +177,59 @@ namespace LoadManagementSystem_LMS_.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Address")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AlternatePhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("AssignedVehicleId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("BankAccountNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("BirthDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("DriverCode")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("FullName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<double?>("LastLatitude")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("LastLongitude")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime?>("LastStatusChangeDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LicenseClass")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LicenseExpiryDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("LicenseNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("MedicalExamExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NationalCode")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -199,7 +237,18 @@ namespace LoadManagementSystem_LMS_.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal?>("SalaryBaseRate")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("AssignedVehicleId");
 
                     b.ToTable("Drivers");
                 });
@@ -279,10 +328,47 @@ namespace LoadManagementSystem_LMS_.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Capacity")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("CapacityUnit")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Color")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("CostPerKm")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CurrentDriverId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CurrentOdometer")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EngineNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("FuelConsumption")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("InspectionExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("InsuranceExpiryDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastServiceDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("LastServiceOdometer")
+                        .HasColumnType("int");
 
                     b.Property<int>("ManufactureYear")
                         .HasColumnType("int");
@@ -295,6 +381,24 @@ namespace LoadManagementSystem_LMS_.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("PurchaseDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("PurchasePrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VIN")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<string>("VehicleCode")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -303,7 +407,18 @@ namespace LoadManagementSystem_LMS_.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("WarrantyExpiryDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CurrentDriverId")
+                        .IsUnique()
+                        .HasFilter("[CurrentDriverId] IS NOT NULL");
+
+                    b.HasIndex("VIN")
+                        .IsUnique()
+                        .HasFilter("[VIN] IS NOT NULL AND [VIN] != ''");
 
                     b.ToTable("Vehicles");
                 });
@@ -452,6 +567,16 @@ namespace LoadManagementSystem_LMS_.Migrations
                     b.Navigation("Load");
                 });
 
+            modelBuilder.Entity("LoadManagementSystem_LMS_.Models.Driver", b =>
+                {
+                    b.HasOne("LoadManagementSystem_LMS_.Models.Vehicle", "AssignedVehicle")
+                        .WithMany("DriversHistory")
+                        .HasForeignKey("AssignedVehicleId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("AssignedVehicle");
+                });
+
             modelBuilder.Entity("LoadManagementSystem_LMS_.Models.Load", b =>
                 {
                     b.HasOne("LoadManagementSystem_LMS_.Models.Customer", "Customer")
@@ -477,6 +602,16 @@ namespace LoadManagementSystem_LMS_.Migrations
                     b.Navigation("Driver");
 
                     b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("LoadManagementSystem_LMS_.Models.Vehicle", b =>
+                {
+                    b.HasOne("LoadManagementSystem_LMS_.Models.Driver", "CurrentDriver")
+                        .WithOne()
+                        .HasForeignKey("LoadManagementSystem_LMS_.Models.Vehicle", "CurrentDriverId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CurrentDriver");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -547,6 +682,8 @@ namespace LoadManagementSystem_LMS_.Migrations
 
             modelBuilder.Entity("LoadManagementSystem_LMS_.Models.Vehicle", b =>
                 {
+                    b.Navigation("DriversHistory");
+
                     b.Navigation("Loads");
                 });
 #pragma warning restore 612, 618

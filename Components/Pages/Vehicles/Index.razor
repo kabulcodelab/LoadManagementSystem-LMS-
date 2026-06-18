@@ -1,11 +1,13 @@
 ﻿@page "/vehicles"
 @attribute [Authorize]
+
 @using LoadManagementSystem_LMS_.Models
 @using LoadManagementSystem_LMS_.Services
 @using Microsoft.AspNetCore.Authorization
-@inject VehicleService VehicleService
+@using Microsoft.AspNetCore.Components
 
-<PageTitle>Vehicles</PageTitle>
+@inject VehicleService VehicleService
+@inject NavigationManager Nav
 
 <div class="page-container">
 
@@ -21,151 +23,361 @@
         </a>
     </div>
 
-    <!-- SEARCH -->
-    <div class="search-panel">
-        <div class="row g-2">
+    <!-- ALERT -->
+    @if (ShowAlert)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <strong>Success!</strong> @AlertMessage
+            <button type="button" class="btn-close" @onclick="CloseAlert" aria-label="Close"></button>
+        </div>
+    }
 
-            <div class="col-md-9 col-12">
+    <!-- SEARCH -->
+    <div class="lms-card mb-4">
+
+        <div class="row g-3 align-items-end">
+
+            <div class="col-lg-8">
+                <label class="form-label fw-semibold">Search Vehicle</label>
                 <input class="form-control"
-                       placeholder="Search by code, plate, model, type..."
-                       @bind="search" />
+                       placeholder="Search by code, plate, VIN, model, type, engine..."
+                       @bind="search" @bind:event="oninput" />
             </div>
 
-            <div class="col-md-3 col-12 d-flex gap-2">
+            <div class="col-lg-4">
 
-                <button class="btn btn-lms-primary w-100"
-                        @onclick="ApplyFilter">
-                    Search
-                </button>
+                <div class="d-flex gap-2">
 
-                <button class="btn btn-secondary w-100"
-                        @onclick="Reset">
-                    Reset
-                </button>
+                    <button class="btn btn-lms-primary flex-fill" @onclick="ApplyFilter">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+
+                    <button class="btn btn-secondary flex-fill" @onclick="Reset">
+                        <i class="bi bi-arrow-clockwise"></i> Reset
+                    </button>
+
+                </div>
 
             </div>
 
         </div>
+
     </div>
 
     <!-- TABLE -->
-    <div class="table-responsive lms-card">
+    <div class="lms-card">
 
-        <table class="table lms-table mb-0">
+        <div class="table-responsive">
 
-            <thead>
-                <tr>
-                    <th>Code</th>
-                    <th>Plate</th>
-                    <th>Model</th>
-                    <th>Type</th>
-                    <th>Capacity</th>
-                    <th>Year</th>
-                    <th>Status</th>
-                    <th style="width:180px;">Actions</th>
-                </tr>
-            </thead>
+            <table class="table lms-table align-middle mb-0">
 
-            <tbody>
-
-                @if (vehicles == null)
-                {
+                <thead>
                     <tr>
-                        <td colspan="8">Loading...</td>
+                        <th>Code</th>
+                        <th>Plate</th>
+                        <th>VIN</th>
+                        <th>Model</th>
+                        <th>Type</th>
+                        <th>Capacity</th>
+                        <th>Year</th>
+                        <th>Status</th>
+                        <th>Driver</th>
+                        <th class="text-center" style="width:160px;">Actions</th>
                     </tr>
-                }
-                else if (!vehicles.Any())
-                {
-                    <tr>
-                        <td colspan="8">No vehicles found</td>
-                    </tr>
-                }
-                else
-                {
-                    @foreach (var v in vehicles)
+                </thead>
+
+                <tbody>
+
+                    @if (pagedResult == null)
                     {
                         <tr>
-
-                            <td>@v.VehicleCode</td>
-                            <td>@v.PlateNumber</td>
-                            <td>@v.Model</td>
-                            <td>@v.VehicleType</td>
-                            <td>@v.Capacity</td>
-                            <td>@v.ManufactureYear</td>
-
-                            <td>
-                                <span class="badge @(v.IsActive ? "bg-success" : "bg-danger")">
-                                    @(v.IsActive ? "Active" : "Inactive")
-                                </span>
-                            </td>
-
-                            <td class="d-flex gap-1">
-
-                                <a class="btn btn-info btn-sm"
-                                   href="/vehicles/details/@v.Id">
-                                    View
-                                </a>
-
-                                <a class="btn btn-warning btn-sm"
-                                   href="/vehicles/edit/@v.Id">
-                                    Edit
-                                </a>
-
-                                <button class="btn btn-danger btn-sm"
-                                        @onclick="() => Delete(v.Id)">
-                                    Delete
-                                </button>
-
-                            </td>
-
+                            <td colspan="10" class="text-center py-4">Loading...</td>
                         </tr>
                     }
-                }
+                    else if (!pagedResult.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="10" class="text-center py-4">No vehicles found.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var v in pagedResult.Items)
+                        {
+                            <tr>
 
-            </tbody>
+                                <td><code>@v.VehicleCode</code></td>
+                                <td><strong>@v.PlateNumber</strong></td>
+                                <td><small>@v.VIN</small></td>
+                                <td>@v.Model</td>
+                                <td>@v.VehicleType</td>
+                                <td>@v.Capacity @v.CapacityUnit</td>
+                                <td>@v.ManufactureYear</td>
 
-        </table>
+                                <td>
+                                    <span class="badge @GetStatusBadgeClass(v.Status)">
+                                        @v.Status.ToString()
+                                    </span>
+                                </td>
+
+                                <td>
+                                    @if (v.CurrentDriver != null)
+                                    {
+                                        @v.CurrentDriver.FullName
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Not assigned</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <div class="d-flex gap-1 justify-content-center">
+
+                                        <a class="btn btn-sm btn-outline-info"
+                                           href="/vehicles/details/@v.Id"
+                                           title="View">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+
+                                        <a class="btn btn-sm btn-outline-warning"
+                                           href="/vehicles/edit/@v.Id"
+                                           title="Edit">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => ConfirmDelete(v.Id, v.PlateNumber)"
+                                                title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+
+                                    </div>
+                                </td>
+
+                            </tr>
+                        }
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <!-- PAGINATION -->
+        @if (pagedResult != null && pagedResult.TotalPages > 1)
+        {
+            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+
+                <div>
+                    <span class="text-muted small">
+                        Showing @((pagedResult.CurrentPage - 1) * pagedResult.PageSize + 1) -
+                        @Math.Min(pagedResult.CurrentPage * pagedResult.PageSize, pagedResult.TotalCount)
+                        of @pagedResult.TotalCount entries
+                    </span>
+                </div>
+
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+
+                        <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => GoToPage(currentPage - 1)">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                        </li>
+
+                        @for (int i = 1; i <= pagedResult.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == currentPage ? "active" : "")">
+                                <button class="page-link" @onclick="() => GoToPage(i)">@i</button>
+                            </li>
+                        }
+
+                        <li class="page-item @(currentPage == pagedResult.TotalPages ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => GoToPage(currentPage + 1)">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </li>
+
+                    </ul>
+                </nav>
+
+            </div>
+        }
+        else if (pagedResult != null && pagedResult.TotalCount > 0)
+        {
+            <div class="mt-3 pt-2 border-top text-muted small">
+                Showing @pagedResult.TotalCount entries
+            </div>
+        }
 
     </div>
+
+    <!-- DELETE CONFIRMATION MODAL -->
+    @if (DeleteId.HasValue)
+    {
+        <div class="modal-backdrop fade show" style="display:block;"></div>
+        <div class="modal show d-block" tabindex="-1" role="dialog" style="display:block;">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirm Delete</h5>
+                        <button type="button" class="btn-close" @onclick="CancelDelete"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete vehicle <strong>@DeletePlate</strong>?</p>
+                        <p class="text-danger">This action cannot be undone.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" @onclick="CancelDelete">Cancel</button>
+                        <button class="btn btn-danger" @onclick="ExecuteDelete">Yes, Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 
 </div>
 
 @code {
+    // ---- Parameters ----
+    [Parameter] public string? Message { get; set; }
 
-    List<Vehicle>? vehicles;
-    string? search;
+    // ---- Fields ----
+    private PagedResult<Vehicle>? pagedResult;
+    private string? search;
+    private int currentPage = 1;
+    private const int PageSize = 10;
 
+    // Alert
+    private bool ShowAlert = false;
+    private string AlertMessage = string.Empty;
+    private CancellationTokenSource? _alertCts;
+
+    // Delete confirmation
+    private int? DeleteId;
+    private string? DeletePlate;
+
+    // ---- Lifecycle ----
     protected override async Task OnInitializedAsync()
     {
-        vehicles = await VehicleService.GetAll();
+        await LoadData();
     }
 
+    protected override void OnParametersSet()
+    {
+        if (!string.IsNullOrEmpty(Message))
+        {
+            ShowAlertMessage(Message);
+        }
+    }
+
+    // ---- Data loading ----
+    async Task LoadData()
+    {
+        pagedResult = await VehicleService.GetPaged(currentPage, PageSize, search);
+    }
+
+    // ---- Search / Filter ----
     async Task ApplyFilter()
     {
-        // اگر later filter service داشتی اینجا تغییر بده
-        vehicles = await VehicleService.GetAll();
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            vehicles = vehicles
-                .Where(x =>
-                    x.VehicleCode.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                    x.PlateNumber.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                    x.Model.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                    x.VehicleType.Contains(search, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-        }
+        currentPage = 1;
+        await LoadData();
     }
 
     async Task Reset()
     {
         search = null;
-        vehicles = await VehicleService.GetAll();
+        currentPage = 1;
+        await LoadData();
     }
 
-    private async Task Delete(int id)
+    // ---- Pagination ----
+    async Task GoToPage(int page)
     {
-        await VehicleService.Delete(id);
-        vehicles = await VehicleService.GetAll();
+        if (page < 1 || page > pagedResult?.TotalPages) return;
+        currentPage = page;
+        await LoadData();
+    }
+
+    // ---- Delete ----
+    void ConfirmDelete(int id, string plate)
+    {
+        DeleteId = id;
+        DeletePlate = plate;
+        StateHasChanged();
+    }
+
+    void CancelDelete()
+    {
+        DeleteId = null;
+        DeletePlate = null;
+        StateHasChanged();
+    }
+
+    async Task ExecuteDelete()
+    {
+        if (DeleteId.HasValue)
+        {
+            try
+            {
+                await VehicleService.Delete(DeleteId.Value);
+                CancelDelete();
+                await LoadData();
+                ShowAlertMessage($"Vehicle '{DeletePlate}' was deleted successfully.");
+            }
+            catch (Exception ex)
+            {
+                ShowAlertMessage($"Error: {ex.Message}");
+            }
+        }
+    }
+
+    // ---- Alert helpers (auto‑close after 1 second) ----
+    void ShowAlertMessage(string message)
+    {
+        _alertCts?.Cancel();
+        _alertCts = new CancellationTokenSource();
+
+        AlertMessage = message;
+        ShowAlert = true;
+        StateHasChanged();
+
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(1000, _alertCts.Token);
+            if (!_alertCts.Token.IsCancellationRequested)
+            {
+                await InvokeAsync(() =>
+                {
+                    ShowAlert = false;
+                    AlertMessage = string.Empty;
+                    StateHasChanged();
+                });
+            }
+        });
+    }
+
+    void CloseAlert()
+    {
+        _alertCts?.Cancel();
+        ShowAlert = false;
+        AlertMessage = string.Empty;
+        StateHasChanged();
+    }
+
+    // ---- Utility ----
+    string GetStatusBadgeClass(VehicleStatus status)
+    {
+        return status switch
+        {
+            VehicleStatus.Available => "bg-success",
+            VehicleStatus.OnTrip => "bg-primary",
+            VehicleStatus.UnderMaintenance => "bg-warning",
+            VehicleStatus.OutOfService => "bg-danger",
+            VehicleStatus.Reserved => "bg-info",
+            _ => "bg-secondary"
+        };
     }
 }
