@@ -13,7 +13,7 @@ public class VehicleService
         _context = context;
     }
 
-    // ===== GET ALL (without pagination, for dropdowns) =====
+    // ===== GET ALL (for dropdowns) =====
     public async Task<List<Vehicle>> GetAll()
     {
         return await _context.Vehicles
@@ -53,7 +53,7 @@ public class VehicleService
             .OrderBy(v => v.VehicleCode)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Include(v => v.CurrentDriver)  // for showing driver name
+            .Include(v => v.CurrentDriver)
             .ToListAsync();
 
         return new PagedResult<Vehicle>
@@ -65,10 +65,15 @@ public class VehicleService
         };
     }
 
-    // ===== CRUD =====
+    // ===== ADD (with duplicate check) =====
     public async Task Add(Vehicle vehicle)
     {
-        // Auto-generate VehicleCode if empty
+        // Check for duplicate PlateNumber
+        var exists = await _context.Vehicles
+            .AnyAsync(v => v.PlateNumber == vehicle.PlateNumber);
+        if (exists)
+            throw new InvalidOperationException($"Plate number '{vehicle.PlateNumber}' already exists in the system.");
+
         if (string.IsNullOrWhiteSpace(vehicle.VehicleCode))
             vehicle.VehicleCode = $"VEH-{DateTime.Now:yyyyMMddHHmmss}";
 
@@ -77,13 +82,21 @@ public class VehicleService
         await _context.SaveChangesAsync();
     }
 
+    // ===== UPDATE (with duplicate check, excluding itself) =====
     public async Task Update(Vehicle vehicle)
     {
+        // Check for duplicate PlateNumber, excluding the current vehicle
+        var exists = await _context.Vehicles
+            .AnyAsync(v => v.PlateNumber == vehicle.PlateNumber && v.Id != vehicle.Id);
+        if (exists)
+            throw new InvalidOperationException($"Plate number '{vehicle.PlateNumber}' already exists in the system (used by another vehicle).");
+
         vehicle.UpdatedAt = DateTime.UtcNow;
         _context.Vehicles.Update(vehicle);
         await _context.SaveChangesAsync();
     }
 
+    // ===== DELETE =====
     public async Task Delete(int id)
     {
         var vehicle = await _context.Vehicles.FindAsync(id);
@@ -105,7 +118,7 @@ public class VehicleService
             .ToListAsync();
     }
 
-    // ===== LEGACY FILTER (for backward compatibility, can be removed) =====
+    // ===== LEGACY FILTER (optional) =====
     public async Task<List<Vehicle>> GetFiltered(string? search)
     {
         var query = _context.Vehicles.AsQueryable();

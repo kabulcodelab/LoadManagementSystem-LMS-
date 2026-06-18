@@ -19,11 +19,11 @@
         <div class="page-subtitle">Add a new vehicle to the system</div>
     </div>
 
-    <!-- Alert -->
+    <!-- Alert - now with dynamic type (success/danger) -->
     @if (ShowAlert)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <strong>Success!</strong> @AlertMessage
+        <div class="alert alert-@AlertType alert-dismissible fade show" role="alert">
+            <strong>@(AlertType == "danger" ? "Error!" : "Success!")</strong> @AlertMessage
             <button type="button" class="btn-close" @onclick="CloseAlert" aria-label="Close"></button>
         </div>
     }
@@ -36,7 +36,7 @@
 
             <div class="row g-3 lms-form">
 
-                <!-- Vehicle Code (auto-generated, read-only) -->
+                <!-- Vehicle Code (auto-generated) -->
                 <div class="col-12 col-md-4">
                     <label>Vehicle Code</label>
                     <InputText class="form-control" @bind-Value="vehicle.VehicleCode" disabled />
@@ -50,11 +50,10 @@
                     <ValidationMessage For="@(() => vehicle.PlateNumber)" />
                 </div>
 
-                <!-- VIN (Required, 17 chars) -->
+                <!-- VIN -->
                 <div class="col-12 col-md-4">
-                    <label>VIN (Chassis Number) </label>
+                    <label>VIN (Chassis Number)</label>
                     <InputText class="form-control" @bind-Value="vehicle.VIN" />
-                    <ValidationMessage For="@(() => vehicle.VIN)" />
                 </div>
 
                 <!-- Engine Number (Optional) -->
@@ -90,7 +89,7 @@
                     <ValidationMessage For="@(() => vehicle.Capacity)" />
                 </div>
 
-                <!-- Capacity Unit (Optional) -->
+                <!-- Capacity Unit -->
                 <div class="col-12 col-md-4">
                     <label>Capacity Unit</label>
                     <InputSelect class="form-select" @bind-Value="vehicle.CapacityUnit">
@@ -100,14 +99,13 @@
                     </InputSelect>
                 </div>
 
-                <!-- Manufacture Year (Required) -->
+                <!-- Manufacture Year -->
                 <div class="col-12 col-md-4">
-                    <label>Manufacture Year </label>
+                    <label>Manufacture Year</label>
                     <InputNumber class="form-control" @bind-Value="vehicle.ManufactureYear" />
-                    <ValidationMessage For="@(() => vehicle.ManufactureYear)" />
                 </div>
 
-                <!-- Status (Optional, default Available) -->
+                <!-- Status -->
                 <div class="col-12 col-md-4">
                     <label>Status</label>
                     <InputSelect class="form-select" @bind-Value="vehicle.Status">
@@ -118,67 +116,67 @@
                     </InputSelect>
                 </div>
 
-                <!-- Current Odometer (Optional) -->
+                <!-- Current Odometer -->
                 <div class="col-12 col-md-4">
                     <label>Current Odometer (km)</label>
                     <InputNumber class="form-control" @bind-Value="vehicle.CurrentOdometer" />
                 </div>
 
-                <!-- Last Service Date (Optional) -->
+                <!-- Last Service Date -->
                 <div class="col-12 col-md-4">
                     <label>Last Service Date</label>
                     <InputDate class="form-control" @bind-Value="vehicle.LastServiceDate" />
                 </div>
 
-                <!-- Last Service Odometer (Optional) -->
+                <!-- Last Service Odometer -->
                 <div class="col-12 col-md-4">
                     <label>Last Service Odometer (km)</label>
                     <InputNumber class="form-control" @bind-Value="vehicle.LastServiceOdometer" />
                 </div>
 
-                <!-- Fuel Consumption (Optional) -->
+                <!-- Fuel Consumption -->
                 <div class="col-12 col-md-4">
                     <label>Fuel Consumption (L/100km)</label>
                     <InputNumber class="form-control" @bind-Value="vehicle.FuelConsumption" />
                 </div>
 
-                <!-- Cost Per Km (Optional) -->
+                <!-- Cost Per Km -->
                 <div class="col-12 col-md-4">
                     <label>Cost Per Km</label>
                     <InputNumber class="form-control" @bind-Value="vehicle.CostPerKm" />
                 </div>
 
-                <!-- Purchase Date (Optional) -->
+                <!-- Purchase Date -->
                 <div class="col-12 col-md-4">
                     <label>Purchase Date</label>
                     <InputDate class="form-control" @bind-Value="vehicle.PurchaseDate" />
                 </div>
 
-                <!-- Purchase Price (Optional) -->
+                <!-- Purchase Price -->
                 <div class="col-12 col-md-4">
                     <label>Purchase Price</label>
                     <InputNumber class="form-control" @bind-Value="vehicle.PurchasePrice" />
                 </div>
 
-                <!-- Warranty Expiry Date (Optional) -->
+                <!-- Warranty Expiry -->
                 <div class="col-12 col-md-4">
                     <label>Warranty Expiry Date</label>
                     <InputDate class="form-control" @bind-Value="vehicle.WarrantyExpiryDate" />
                 </div>
 
-                <!-- Inspection Expiry Date (Optional) -->
+                <!-- Inspection Expiry -->
                 <div class="col-12 col-md-4">
                     <label>Inspection Expiry Date</label>
                     <InputDate class="form-control" @bind-Value="vehicle.InspectionExpiryDate" />
                 </div>
 
-                <!-- Insurance Expiry Date (Optional) -->
+                <!-- Insurance Expiry -->
                 <div class="col-12 col-md-4">
                     <label>Insurance Expiry Date</label>
                     <InputDate class="form-control" @bind-Value="vehicle.InsuranceExpiryDate" />
                 </div>
 
-                <!-- Current Driver (Optional) -->
+                <!-- Current Driver -->
                 <div class="col-12 col-md-4">
                     <label>Current Driver</label>
                     <InputSelect class="form-select" @bind-Value="vehicle.CurrentDriverId">
@@ -190,7 +188,7 @@
                     </InputSelect>
                 </div>
 
-                <!-- Is Active (Optional) -->
+                <!-- Is Active -->
                 <div class="col-12 col-md-4 d-flex align-items-center">
                     <div class="form-check">
                         <InputCheckbox class="form-check-input" @bind-Value="vehicle.IsActive" />
@@ -215,14 +213,14 @@
     private Vehicle vehicle = new();
     private List<Driver> drivers = new();
 
-    // Alert properties
+    // Alert properties with dynamic type
     private bool ShowAlert = false;
     private string AlertMessage = string.Empty;
+    private string AlertType = "success"; // "success" or "danger"
     private CancellationTokenSource? _alertCts;
 
     protected override async Task OnInitializedAsync()
     {
-        // Load active drivers for the dropdown
         var allDrivers = await DriverService.GetAll();
         drivers = allDrivers.Where(d => d.IsActive).ToList();
     }
@@ -232,26 +230,24 @@
         try
         {
             await VehicleService.Add(vehicle);
-
-            ShowAlertMessage($"Vehicle '{vehicle.PlateNumber}' was added successfully!");
-
-            // Wait 1 second then navigate to list
+            ShowAlertMessage($"Vehicle '{vehicle.PlateNumber}' was added successfully!", isError: false);
             await Task.Delay(1000);
             Nav.NavigateTo("/vehicles");
         }
         catch (Exception ex)
         {
-            ShowAlertMessage($"Error: {ex.Message}");
+            ShowAlertMessage($"Error: {ex.Message}", isError: true);
         }
     }
 
-    private void ShowAlertMessage(string message)
+    private void ShowAlertMessage(string message, bool isError = false)
     {
         _alertCts?.Cancel();
         _alertCts = new CancellationTokenSource();
 
         AlertMessage = message;
         ShowAlert = true;
+        AlertType = isError ? "danger" : "success";
         StateHasChanged();
 
         _ = Task.Run(async () =>
