@@ -4,77 +4,250 @@
 @using LoadManagementSystem_LMS_.Models
 @using LoadManagementSystem_LMS_.Services
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
 
 @inject DriverService DriverService
+@inject VehicleService VehicleService
 @inject NavigationManager Nav
 
 <div class="page-container">
 
     <div class="page-header">
         <h2 class="page-title">Edit Driver</h2>
+        <p class="page-subtitle">Update driver information</p>
     </div>
+
+    <!-- Alert -->
+    @if (ShowAlert)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <strong>Success!</strong> @AlertMessage
+            <button type="button" class="btn-close" @onclick="CloseAlert" aria-label="Close"></button>
+        </div>
+    }
 
     @if (driver == null)
     {
-        <p>Loading...</p>
+        <div class="lms-card text-center py-5">
+            <p>Loading driver data...</p>
+        </div>
     }
     else
     {
-        <EditForm Model="driver" OnValidSubmit="Update">
+        <div class="lms-card">
 
-            <DataAnnotationsValidator />
+            <EditForm Model="driver" OnValidSubmit="HandleValidSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="alert alert-danger" />
 
-            <div class="lms-card lms-form">
+                <div class="row g-3 lms-form">
 
-                <div class="mb-3">
-                    <label>Full Name</label>
-                    <InputText class="form-control" @bind-Value="driver.FullName" />
+                    <!-- DriverCode (read-only) -->
+                    <div class="col-12 col-md-4">
+                        <label>Driver Code</label>
+                        <InputText class="form-control" @bind-Value="driver.DriverCode" disabled />
+                    </div>
+
+                    <!-- Full Name (Required) -->
+                    <div class="col-12 col-md-4">
+                        <label>Full Name *</label>
+                        <InputText class="form-control" @bind-Value="driver.FullName" />
+                        <ValidationMessage For="@(() => driver.FullName)" />
+                    </div>
+
+                    <!-- National Code (Required) -->
+                    <div class="col-12 col-md-4">
+                        <label>National Code *</label>
+                        <InputText class="form-control" @bind-Value="driver.NationalCode" />
+                        <ValidationMessage For="@(() => driver.NationalCode)" />
+                    </div>
+
+                    <!-- Primary Phone (Required, 11 digits) -->
+                    <div class="col-12 col-md-6">
+                        <label>Primary Phone * (11 digits incl. US country code)</label>
+                        <InputText class="form-control" @bind-Value="driver.PhoneNumber" />
+                        <ValidationMessage For="@(() => driver.PhoneNumber)" />
+                    </div>
+
+                    <!-- Alternate Phone (Optional, 11 digits if entered) -->
+                    <div class="col-12 col-md-6">
+                        <label>Alternate Phone (11 digits incl. US country code)</label>
+                        <InputText class="form-control" @bind-Value="driver.AlternatePhoneNumber" />
+                        <ValidationMessage For="@(() => driver.AlternatePhoneNumber)" />
+                    </div>
+
+                    <!-- Birth Date (Optional) -->
+                    <div class="col-12 col-md-4">
+                        <label>Birth Date</label>
+                        <InputDate class="form-control" @bind-Value="driver.BirthDate" />
+                    </div>
+
+                    <!-- Address (Optional) -->
+                    <div class="col-12 col-md-8">
+                        <label>Address</label>
+                        <InputText class="form-control" @bind-Value="driver.Address" />
+                    </div>
+
+                    <!-- License Number (Required) -->
+                    <div class="col-12 col-md-4">
+                        <label>License Number *</label>
+                        <InputText class="form-control" @bind-Value="driver.LicenseNumber" />
+                        <ValidationMessage For="@(() => driver.LicenseNumber)" />
+                    </div>
+
+                    <!-- License Class (Optional) -->
+                    <div class="col-12 col-md-4">
+                        <label>License Class</label>
+                        <InputSelect class="form-select" @bind-Value="driver.LicenseClass">
+                            <option value="">Select</option>
+                            <option value="Class 1">Class 1</option>
+                            <option value="Class 2">Class 2</option>
+                            <option value="Class 3">Class 3</option>
+                            <option value="Special">Special</option>
+                            <option value="Motorcycle">Motorcycle</option>
+                        </InputSelect>
+                    </div>
+
+                    <!-- License Expiry (Optional) -->
+                    <div class="col-12 col-md-4">
+                        <label>License Expiry Date</label>
+                        <InputDate class="form-control" @bind-Value="driver.LicenseExpiryDate" />
+                    </div>
+
+                    <!-- Medical Exam Expiry (Optional) -->
+                    <div class="col-12 col-md-4">
+                        <label>Medical Exam Expiry</label>
+                        <InputDate class="form-control" @bind-Value="driver.MedicalExamExpiryDate" />
+                    </div>
+
+                    <!-- Bank Account (Optional) -->
+                    <div class="col-12 col-md-4">
+                        <label>Bank Account / IBAN</label>
+                        <InputText class="form-control" @bind-Value="driver.BankAccountNumber" />
+                    </div>
+
+                    <!-- Salary Base Rate (Optional) -->
+                    <div class="col-12 col-md-4">
+                        <label>Base Salary Rate</label>
+                        <InputNumber class="form-control" @bind-Value="driver.SalaryBaseRate" />
+                    </div>
+
+                    <!-- Status (Optional, with default) -->
+                    <div class="col-12 col-md-4">
+                        <label>Operational Status</label>
+                        <InputSelect class="form-select" @bind-Value="driver.Status">
+                            @foreach (DriverStatus status in Enum.GetValues(typeof(DriverStatus)))
+                            {
+                                <option value="@status">@status.ToString()</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <!-- Assigned Vehicle (Optional) -->
+                    <div class="col-12 col-md-4">
+                        <label>Assigned Vehicle</label>
+                        <InputSelect class="form-select" @bind-Value="driver.AssignedVehicleId">
+                            <option value="">None</option>
+                            @foreach (var vehicle in vehicles)
+                            {
+                                <option value="@vehicle.Id">@vehicle.PlateNumber - @vehicle.Model</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <!-- Is Active (Optional) -->
+                    <div class="col-12 col-md-4 d-flex align-items-center">
+                        <div class="form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="driver.IsActive" />
+                            <label class="form-check-label">Active</label>
+                        </div>
+                    </div>
+
                 </div>
 
-                <div class="mb-3">
-                    <label>Phone Number</label>
-                    <InputText class="form-control" @bind-Value="driver.PhoneNumber" />
+                <div class="d-flex flex-wrap gap-2 mt-4">
+                    <button type="submit" class="btn btn-lms-primary">Update Driver</button>
+                    <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
                 </div>
 
-                <div class="mb-3">
-                    <label>License Number</label>
-                    <InputText class="form-control" @bind-Value="driver.LicenseNumber" />
-                </div>
+            </EditForm>
 
-                <button type="submit" class="btn btn-lms-primary">
-                    Update
-                </button>
-
-                <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel">
-                    Cancel
-                </button>
-
-            </div>
-
-        </EditForm>
+        </div>
     }
 
 </div>
 
 @code {
+    [Parameter] public int Id { get; set; }
 
-    [Parameter]
-    public int Id { get; set; }
+    private Driver? driver;
+    private List<Vehicle> vehicles = new();
 
-    Driver? driver;
+    // Alert properties
+    private bool ShowAlert = false;
+    private string AlertMessage = string.Empty;
+    private CancellationTokenSource? _alertCts;
 
     protected override async Task OnInitializedAsync()
     {
         driver = await DriverService.GetById(Id);
+        vehicles = await VehicleService.GetAll();
     }
 
-    async Task Update()
+    private async Task HandleValidSubmit()
     {
-        await DriverService.Update(driver!);
-        Nav.NavigateTo("/drivers");
+        try
+        {
+            await DriverService.Update(driver!);
+
+            ShowAlertMessage($"Driver '{driver!.FullName}' updated successfully!");
+            StateHasChanged();
+
+            // Wait then navigate to list
+            await Task.Delay(1000);
+            Nav.NavigateTo("/drivers");
+        }
+        catch (Exception ex)
+        {
+            AlertMessage = $"Error: {ex.Message}";
+            ShowAlert = true;
+            StateHasChanged();
+        }
     }
 
-    void Cancel()
+    private void ShowAlertMessage(string message)
+    {
+        _alertCts?.Cancel();
+        _alertCts = new CancellationTokenSource();
+
+        AlertMessage = message;
+        ShowAlert = true;
+        StateHasChanged();
+
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(3000, _alertCts.Token);
+            if (!_alertCts.Token.IsCancellationRequested)
+            {
+                await InvokeAsync(() =>
+                {
+                    ShowAlert = false;
+                    AlertMessage = string.Empty;
+                    StateHasChanged();
+                });
+            }
+        });
+    }
+
+    private void CloseAlert()
+    {
+        _alertCts?.Cancel();
+        ShowAlert = false;
+        AlertMessage = string.Empty;
+        StateHasChanged();
+    }
+
+    private void Cancel()
     {
         Nav.NavigateTo("/drivers");
     }

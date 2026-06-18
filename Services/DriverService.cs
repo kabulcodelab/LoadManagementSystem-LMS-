@@ -13,7 +13,6 @@ public class DriverService
         _context = context;
     }
 
-    // 🔥 NEW: GET ALL (basic)
     public async Task<List<Driver>> GetAll()
     {
         return await _context.Drivers
@@ -21,7 +20,6 @@ public class DriverService
             .ToListAsync();
     }
 
-    // 🔥 NEW: SEARCH (professional)
     public async Task<List<Driver>> GetFiltered(string? search)
     {
         var query = _context.Drivers.AsQueryable();
@@ -31,7 +29,9 @@ public class DriverService
             query = query.Where(x =>
                 x.FullName.Contains(search) ||
                 x.PhoneNumber.Contains(search) ||
-                x.LicenseNumber.Contains(search)
+                x.LicenseNumber.Contains(search) ||
+                x.NationalCode.Contains(search) ||
+                x.DriverCode.Contains(search)
             );
         }
 
@@ -42,17 +42,27 @@ public class DriverService
 
     public async Task<Driver?> GetById(int id)
     {
-        return await _context.Drivers.FindAsync(id);
+        return await _context.Drivers
+            .Include(d => d.AssignedVehicle)
+            .FirstOrDefaultAsync(d => d.Id == id);
     }
 
     public async Task Add(Driver driver)
     {
+        // Auto-generate DriverCode if empty
+        if (string.IsNullOrWhiteSpace(driver.DriverCode))
+            driver.DriverCode = $"DRV-{DateTime.Now:yyyyMMddHHmmss}";
+
+        // Set creation timestamp
+        driver.CreatedAt = DateTime.UtcNow;
+
         _context.Drivers.Add(driver);
         await _context.SaveChangesAsync();
     }
 
     public async Task Update(Driver driver)
     {
+        driver.UpdatedAt = DateTime.UtcNow;
         _context.Drivers.Update(driver);
         await _context.SaveChangesAsync();
     }
@@ -66,6 +76,7 @@ public class DriverService
             await _context.SaveChangesAsync();
         }
     }
+
     public async Task<List<Load>> GetDriverLoads(int driverId)
     {
         return await _context.Loads
@@ -74,5 +85,37 @@ public class DriverService
             .Where(x => x.DriverId == driverId)
             .OrderByDescending(x => x.CreatedDate)
             .ToListAsync();
+    }
+
+    public async Task<PagedResult<Driver>> GetPaged(int page, int pageSize, string? search = null)
+    {
+        var query = _context.Drivers.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(x =>
+                x.FullName.Contains(search) ||
+                x.PhoneNumber.Contains(search) ||
+                x.LicenseNumber.Contains(search) ||
+                x.NationalCode.Contains(search) ||
+                x.DriverCode.Contains(search)
+            );
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .OrderByDescending(x => x.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<Driver>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageSize = pageSize,
+            CurrentPage = page
+        };
     }
 }

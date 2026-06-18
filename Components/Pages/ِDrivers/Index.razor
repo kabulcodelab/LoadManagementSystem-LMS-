@@ -4,8 +4,10 @@
 @using LoadManagementSystem_LMS_.Models
 @using LoadManagementSystem_LMS_.Services
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components
 
 @inject DriverService DriverService
+@inject NavigationManager Nav
 
 <div class="page-container">
 
@@ -25,6 +27,15 @@
 
     </div>
 
+    <!-- Alert Banner -->
+    @if (ShowAlert)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <strong>Success!</strong> @AlertMessage
+            <button type="button" class="btn-close" @onclick="CloseAlert" aria-label="Close"></button>
+        </div>
+    }
+
     <!-- Search Card -->
     <div class="lms-card mb-4">
 
@@ -36,8 +47,8 @@
                 </label>
 
                 <input class="form-control"
-                       placeholder="Search by name, phone number or license..."
-                       @bind="search" />
+                       placeholder="Search by name, phone, license, or code..."
+                       @bind="search" @bind:event="oninput" />
             </div>
 
             <div class="col-lg-4">
@@ -72,36 +83,42 @@
 
                 <thead>
                     <tr>
+                        <th>Code</th>
                         <th>Full Name</th>
-                        <th>Phone Number</th>
-                        <th>License Number</th>
-                        <th width="220">Actions</th>
+                        <th>Phone</th>
+                        <th>License #</th>
+                        <th>Status</th>
+                        <th>Vehicle</th>
+                        <th>Active</th>
+                        <th class="text-center">Actions</th>
                     </tr>
                 </thead>
 
                 <tbody>
 
-                    @if (drivers == null)
+                    @if (pagedResult == null)
                     {
                         <tr>
-                            <td colspan="4" class="text-center py-4">
+                            <td colspan="8" class="text-center py-4">
                                 Loading...
                             </td>
                         </tr>
                     }
-                    else if (!drivers.Any())
+                    else if (!pagedResult.Items.Any())
                     {
                         <tr>
-                            <td colspan="4" class="text-center py-4">
+                            <td colspan="8" class="text-center py-4">
                                 No drivers found.
                             </td>
                         </tr>
                     }
                     else
                     {
-                        @foreach (var d in drivers)
+                        @foreach (var d in pagedResult.Items)
                         {
                             <tr>
+
+                                <td><code>@d.DriverCode</code></td>
 
                                 <td>
                                     <strong>@d.FullName</strong>
@@ -112,25 +129,48 @@
                                 <td>@d.LicenseNumber</td>
 
                                 <td>
+                                    <span class="badge @GetStatusBadgeClass(d.Status)">
+                                        @d.Status.ToString()
+                                    </span>
+                                </td>
 
-                                    <div class="d-flex gap-2">
+                                <td>
+                                    @if (d.AssignedVehicle != null)
+                                    {
+                                        @($"{d.AssignedVehicle.PlateNumber} - {d.AssignedVehicle.Model}")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Not assigned</span>
+                                    }
+                                </td>
 
-                                        <a class="btn btn-sm btn-info"
-                                           href="/drivers/details/@d.Id">
+                                <td>
+                                    <span class="badge @(d.IsActive ? "bg-success" : "bg-secondary")">
+                                        @(d.IsActive ? "Yes" : "No")
+                                    </span>
+                                </td>
+
+                                <td>
+
+                                    <div class="d-flex gap-1 justify-content-center">
+
+                                        <a class="btn btn-sm btn-outline-info"
+                                           href="/drivers/details/@d.Id"
+                                           title="View">
                                             <i class="bi bi-eye"></i>
-                                            View
                                         </a>
 
-                                        <a class="btn btn-sm btn-warning"
-                                           href="/drivers/edit/@d.Id">
+                                        <a class="btn btn-sm btn-outline-warning"
+                                           href="/drivers/edit/@d.Id"
+                                           title="Edit">
                                             <i class="bi bi-pencil-square"></i>
-                                            Edit
                                         </a>
 
-                                        <button class="btn btn-sm btn-danger"
-                                                @onclick="() => Delete(d.Id)">
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => ConfirmDelete(d.Id, d.FullName)"
+                                                title="Delete">
                                             <i class="bi bi-trash"></i>
-                                            Delete
                                         </button>
 
                                     </div>
@@ -147,34 +187,216 @@
 
         </div>
 
+        <!-- Pagination Controls -->
+        @if (pagedResult != null && pagedResult.TotalPages > 1)
+        {
+            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+
+                <div>
+                    <span class="text-muted small">
+                        Showing @((pagedResult.CurrentPage - 1) * pagedResult.PageSize + 1) -
+                        @Math.Min(pagedResult.CurrentPage * pagedResult.PageSize, pagedResult.TotalCount)
+                        of @pagedResult.TotalCount entries
+                    </span>
+                </div>
+
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+
+                        <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => GoToPage(currentPage - 1)">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                        </li>
+
+                        @for (int i = 1; i <= pagedResult.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == currentPage ? "active" : "")">
+                                <button class="page-link" @onclick="() => GoToPage(i)">
+                                    @i
+                                </button>
+                            </li>
+                        }
+
+                        <li class="page-item @(currentPage == pagedResult.TotalPages ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => GoToPage(currentPage + 1)">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </li>
+
+                    </ul>
+                </nav>
+
+            </div>
+        }
+        else if (pagedResult != null && pagedResult.TotalCount > 0)
+        {
+            <div class="mt-3 pt-2 border-top text-muted small">
+                Showing @pagedResult.TotalCount entries
+            </div>
+        }
+
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    @if (DeleteId.HasValue)
+    {
+        <div class="modal-backdrop fade show" style="display:block;"></div>
+        <div class="modal show d-block" tabindex="-1" role="dialog" style="display:block;">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirm Delete</h5>
+                        <button type="button" class="btn-close" @onclick="CancelDelete"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete driver <strong>@DeleteName</strong>?</p>
+                        <p class="text-danger">This action cannot be undone.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" @onclick="CancelDelete">Cancel</button>
+                        <button class="btn btn-danger" @onclick="ExecuteDelete">Yes, Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 
 </div>
 
 @code {
+    // ---- Parameters ----
+    [Parameter] public string? Message { get; set; }
 
-    List<Driver>? drivers;
-    string? search;
+    // ---- Fields ----
+    private PagedResult<Driver>? pagedResult;
+    private string? search;
+    private int currentPage = 1;
+    private const int PageSize = 10;
 
+    // Alert
+    private bool ShowAlert = false;
+    private string AlertMessage = string.Empty;
+    private CancellationTokenSource? _alertCts;
+
+    // Delete confirmation
+    private int? DeleteId;
+    private string? DeleteName;
+
+    // ---- Lifecycle ----
     protected override async Task OnInitializedAsync()
     {
-        drivers = await DriverService.GetAll();
+        await LoadData();
     }
 
+    protected override void OnParametersSet()
+    {
+        if (!string.IsNullOrEmpty(Message))
+        {
+            ShowAlertMessage(Message);
+        }
+    }
+
+    // ---- Data loading ----
+    async Task LoadData()
+    {
+        pagedResult = await DriverService.GetPaged(currentPage, PageSize, search);
+    }
+
+    // ---- Search / Filter ----
     async Task ApplyFilter()
     {
-        drivers = await DriverService.GetFiltered(search);
+        currentPage = 1; // Reset to first page when searching
+        await LoadData();
     }
 
     async Task Reset()
     {
         search = null;
-        drivers = await DriverService.GetAll();
+        currentPage = 1;
+        await LoadData();
     }
 
-    async Task Delete(int id)
+    // ---- Pagination ----
+    async Task GoToPage(int page)
     {
-        await DriverService.Delete(id);
-        drivers = await DriverService.GetAll();
+        if (page < 1 || page > pagedResult?.TotalPages) return;
+        currentPage = page;
+        await LoadData();
+    }
+
+    // ---- Delete ----
+    void ConfirmDelete(int id, string name)
+    {
+        DeleteId = id;
+        DeleteName = name;
+        StateHasChanged();
+    }
+
+    void CancelDelete()
+    {
+        DeleteId = null;
+        DeleteName = null;
+        StateHasChanged();
+    }
+
+    async Task ExecuteDelete()
+    {
+        if (DeleteId.HasValue)
+        {
+            await DriverService.Delete(DeleteId.Value);
+            CancelDelete();
+            // After deletion, check if current page becomes empty and we are not on page 1
+            await LoadData();
+            ShowAlertMessage($"Driver '{DeleteName}' was deleted successfully.");
+        }
+    }
+
+    // ---- Alert helpers ----
+    void ShowAlertMessage(string message)
+    {
+        _alertCts?.Cancel();
+        _alertCts = new CancellationTokenSource();
+
+        AlertMessage = message;
+        ShowAlert = true;
+        StateHasChanged();
+
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(1000, _alertCts.Token);
+            if (!_alertCts.Token.IsCancellationRequested)
+            {
+                await InvokeAsync(() =>
+                {
+                    ShowAlert = false;
+                    AlertMessage = string.Empty;
+                    StateHasChanged();
+                });
+            }
+        });
+    }
+
+    void CloseAlert()
+    {
+        _alertCts?.Cancel();
+        ShowAlert = false;
+        AlertMessage = string.Empty;
+        StateHasChanged();
+    }
+
+    // ---- Utility ----
+    string GetStatusBadgeClass(DriverStatus status)
+    {
+        return status switch
+        {
+            DriverStatus.Available => "bg-success",
+            DriverStatus.OnTrip => "bg-primary",
+            DriverStatus.Resting => "bg-warning",
+            DriverStatus.Sick => "bg-danger",
+            DriverStatus.OffDuty => "bg-secondary",
+            DriverStatus.Unreachable => "bg-dark",
+            _ => "bg-light"
+        };
     }
 }
