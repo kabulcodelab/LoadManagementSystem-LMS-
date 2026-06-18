@@ -1,0 +1,178 @@
+name: Deploy Load Management System to SmarterASP.NET
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore Dependencies
+        run: dotnet restore "LoadManagementSystem(LMS).csproj"
+
+      - name: Build Project
+        run: dotnet build "LoadManagementSystem(LMS).csproj" --configuration Release --no-restore
+
+      - name: Publish Project
+        run: dotnet publish "LoadManagementSystem(LMS).csproj" --configuration Release --output ./publish
+
+      - name: Remove Development Config
+        shell: powershell
+        run: |
+          if (Test-Path "./publish/appsettings.Development.json") {
+            Remove-Item "./publish/appsettings.Development.json"
+          }
+
+      - name: Create app_offline.htm
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force ./offline
+
+          @"
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>LMS Updating</title>
+            <style>
+              * {
+                box-sizing: border-box;
+              }
+
+              body {
+                margin: 0;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: Arial, sans-serif;
+                background: linear-gradient(135deg, #020617, #1e293b, #2563eb);
+                color: white;
+                text-align: center;
+                padding: 24px;
+              }
+
+              .card {
+                max-width: 560px;
+                width: 100%;
+                padding: 44px 34px;
+                border-radius: 24px;
+                background: rgba(255, 255, 255, 0.12);
+                box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+                backdrop-filter: blur(14px);
+                border: 1px solid rgba(255, 255, 255, 0.22);
+              }
+
+              .loader {
+                width: 64px;
+                height: 64px;
+                margin: 0 auto 24px;
+                border: 6px solid rgba(255, 255, 255, 0.25);
+                border-top-color: white;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+              }
+
+              @keyframes spin {
+                to {
+                  transform: rotate(360deg);
+                }
+              }
+
+              h1 {
+                margin: 0 0 12px;
+                font-size: 32px;
+              }
+
+              p {
+                margin: 0;
+                font-size: 17px;
+                line-height: 1.6;
+                color: rgba(255, 255, 255, 0.86);
+              }
+
+              .brand {
+                margin-top: 26px;
+                font-size: 14px;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: rgba(255, 255, 255, 0.7);
+              }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <div class="loader"></div>
+              <h1>Load Management System is updating</h1>
+              <p>
+                We are deploying the latest LMS update.<br>
+                Please check back in a few moments.
+              </p>
+              <div class="brand">Kabul Code Lab</div>
+            </div>
+          </body>
+          </html>
+          "@ | Out-File -Encoding utf8 ./offline/app_offline.htm
+
+      - name: Upload app_offline.htm
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: ./offline/
+          server-dir: ./
+
+      - name: Wait for IIS Shutdown
+        shell: powershell
+        run: Start-Sleep -Seconds 20
+
+      - name: Deploy Website
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: ./publish/
+          server-dir: ./
+          exclude: |
+            **/app_offline.htm
+
+      - name: Remove app_offline.htm from Server
+        if: always()
+        shell: powershell
+        run: |
+          $ftpUrl = "ftp://${{ secrets.FTP_SERVER }}/app_offline.htm"
+
+          try {
+            $request = [System.Net.FtpWebRequest]::Create($ftpUrl)
+            $request.Method = [System.Net.WebRequestMethods+Ftp]::DeleteFile
+            $request.Credentials = New-Object System.Net.NetworkCredential("${{ secrets.FTP_USERNAME }}", "${{ secrets.FTP_PASSWORD }}")
+            $request.UseBinary = $true
+            $request.KeepAlive = $false
+
+            $response = $request.GetResponse()
+            $response.Close()
+
+            Write-Host "app_offline.htm deleted successfully."
+          }
+          catch {
+            Write-Host "Could not delete app_offline.htm."
+            Write-Host $_.Exception.Message
+          }
