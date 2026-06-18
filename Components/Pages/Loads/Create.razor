@@ -177,6 +177,7 @@
     private async Task Save()
     {
         await LoadService.Add(load);
-        Navigation.NavigateTo("/loads");
+
+        Navigation.NavigateTo("/loads", true);
     }
 }
