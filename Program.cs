@@ -18,6 +18,7 @@ builder.Services.AddScoped<VehicleService>();
 builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<LoadService>();
 builder.Services.AddScoped<DocumentService>();
+builder.Services.AddScoped<StopService>();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();

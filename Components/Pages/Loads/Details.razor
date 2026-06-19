@@ -1,168 +1,371 @@
 ﻿@page "/loads/details/{Id:int}"
 @attribute [Authorize]
+
 @using LoadManagementSystem_LMS_.Models
 @using LoadManagementSystem_LMS_.Services
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components
 
 @inject LoadService LoadService
-@inject DocumentService DocumentService
+@inject NavigationManager Nav
 
-<div class="page-container">
+<div class="container-fluid px-3 px-md-4 py-3">
 
     @if (load == null)
     {
-        <div class="lms-card">Loading...</div>
+        <div class="lms-card text-center py-5">
+            <p>Loading...</p>
+        </div>
     }
     else
     {
         <!-- HEADER -->
-        <div class="page-header d-flex justify-content-between align-items-center">
-
-            <div>
-                <div class="page-title">
-                    Load #@load.LoadNumber
-                </div>
-                <div class="page-subtitle">
-                    Tracking: @load.TrackingNumber
-                </div>
+        <div class="row align-items-center mb-4">
+            <div class="col-12 col-md-8">
+                <h2 class="page-title mb-0">Load #@load.LoadNumber</h2>
+                <p class="page-subtitle text-muted mb-0">
+                    <i class="bi bi-upc-scan"></i> Tracking: @load.TrackingNumber
+                </p>
             </div>
-
-            <span class="badge @GetStatusClass(load.Status)">
-                @load.Status
-            </span>
-
+            <div class="col-12 col-md-4 text-md-end mt-2 mt-md-0">
+                <span class="badge @GetStatusClass(load.Status)" style="font-size:1rem; padding:0.6rem 1.2rem;">
+                    @load.Status
+                </span>
+            </div>
         </div>
 
-        <!-- MAIN INFO -->
+        <!-- ALERT -->
+        @if (ShowAlert)
+        {
+            <div class="alert alert-@AlertType alert-dismissible fade show" role="alert">
+                <strong>@(AlertType == "danger" ? "Error!" : "Success!")</strong> @AlertMessage
+                <button type="button" class="btn-close" @onclick="CloseAlert" aria-label="Close"></button>
+            </div>
+        }
+
+        <!-- ============================================= -->
+        <!-- SECTION 1: LOAD INFORMATION                   -->
+        <!-- ============================================= -->
         <div class="lms-card">
-
+            <h5 class="border-bottom pb-2 mb-3">
+                <i class="bi bi-info-circle"></i> Load Information
+            </h5>
             <div class="row g-3">
 
-                <div class="col-12 col-md-6">
-                    <p><b>Customer:</b> @load.Customer?.Name</p>
-                    <p><b>Driver:</b> @load.Driver?.FullName</p>
-                    <p><b>Vehicle:</b> @load.Vehicle?.PlateNumber</p>
+                <div class="col-12 col-md-4">
+                    <div class="d-flex justify-content-between py-1">
+                        <strong>Load Number:</strong>
+                        <span><code>@load.LoadNumber</code></span>
+                    </div>
                 </div>
 
-                <div class="col-12 col-md-6">
-                    <p><b>Weight:</b> @load.Weight</p>
-                    <p><b>Price:</b> @load.Price</p>
-                    <p><b>Pickup:</b> @load.PickupDate.ToShortDateString()</p>
-                    <p><b>Delivery:</b> @(load.DeliveryDate?.ToShortDateString() ?? "-")</p>
+                <div class="col-12 col-md-4">
+                    <div class="d-flex justify-content-between py-1">
+                        <strong>Tracking Number:</strong>
+                        <span>@load.TrackingNumber</span>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="d-flex justify-content-between py-1">
+                        <strong>Load Type:</strong>
+                        <span>@load.Type</span>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="d-flex justify-content-between py-1">
+                        <strong>Customer:</strong>
+                        <span>@load.Customer?.Name</span>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="d-flex justify-content-between py-1">
+                        <strong>Driver:</strong>
+                        <span>@load.Driver?.FullName</span>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="d-flex justify-content-between py-1">
+                        <strong>Vehicle:</strong>
+                        <span>@load.Vehicle?.PlateNumber</span>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="d-flex justify-content-between py-1">
+                        <strong>Pickup Date:</strong>
+                        <span>@load.PickupDate?.ToShortDateString()</span>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="d-flex justify-content-between py-1">
+                        <strong>Delivery Date:</strong>
+                        <span>@(load.DeliveryDate?.ToShortDateString() ?? "-")</span>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="d-flex justify-content-between py-1">
+                        <strong>Amount:</strong>
+                        <span>@(load.Amount?.ToString("N0") ?? "-")</span>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="d-flex justify-content-between py-1">
+                        <strong>Payment Status:</strong>
+                        <span>
+                            <span class="badge @(load.IsPaid ? "bg-success" : "bg-warning text-dark")">
+                                @(load.IsPaid ? "Paid" : "Unpaid")
+                            </span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="d-flex justify-content-between py-1">
+                        <strong>Remarks:</strong>
+                        <span class="text-wrap">@(string.IsNullOrEmpty(load.Remarks) ? "-" : load.Remarks)</span>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <hr />
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <strong>Created:</strong> @load.CreatedDate.ToString("yyyy-MM-dd HH:mm")
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <strong>Last Updated:</strong> @(load.UpdatedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")
+                            </small>
+                        </div>
+                    </div>
                 </div>
 
             </div>
-
         </div>
 
-        <!-- LOCATIONS -->
+        <!-- ============================================= -->
+        <!-- SECTION 2: STOPS                              -->
+        <!-- ============================================= -->
         <div class="lms-card mt-3">
+            <h5 class="border-bottom pb-2 mb-3">
+                <i class="bi bi-geo-alt"></i> Stops
+                <span class="badge bg-secondary ms-1">@load.Stops.Count</span>
+            </h5>
 
-            <div class="row g-3">
-
-                <div class="col-12 col-md-6">
-                    <h6 class="fw-bold">Pickup Location</h6>
-                    <p>@load.PickupLocation</p>
-                </div>
-
-                <div class="col-12 col-md-6">
-                    <h6 class="fw-bold">Delivery Location</h6>
-                    <p>@load.DeliveryLocation</p>
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- REMARKS -->
-        <div class="lms-card mt-3">
-
-            <h6 class="fw-bold">Remarks</h6>
-            <p class="mb-0">@load.Remarks</p>
-
-        </div>
-
-        <!-- DOCUMENTS -->
-        <div class="lms-card mt-3">
-
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="mb-0">Documents</h5>
-            </div>
-
-            <InputFile OnChange="UploadFile" class="form-control mb-3" />
-
-            @if (documents == null)
+            @if (load.Stops.Count == 0)
             {
-                <p>Loading files...</p>
-            }
-            else if (documents.Count == 0)
-            {
-                <p>No documents uploaded.</p>
+                <p class="text-muted">No stops defined for this load.</p>
             }
             else
             {
-                <ul class="list-group">
-
-                    @foreach (var doc in documents)
-                    {
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-
-                            <span>@doc.FileName</span>
-
-                            <div class="d-flex gap-2">
-
-                                <a class="btn btn-sm btn-success"
-                                   href="@doc.FilePath"
-                                   target="_blank">
-                                    Download
-                                </a>
-
-                                <button class="btn btn-sm btn-danger"
-                                        @onclick="() => DeleteDoc(doc.Id)">
-                                    Delete
-                                </button>
-
-                            </div>
-
-                        </li>
-                    }
-
-                </ul>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Type</th>
+                                <th>Company</th>
+                                <th>Address</th>
+                                <th>City</th>
+                                <th>State</th>
+                                <th>Zip</th>
+                                <th>Initial Date/Time</th>
+                                <th>Final Date/Time</th>
+                                <th>Loaded Miles</th>
+                                <th>Empty Miles</th>
+                                <th>Pickup #</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < load.Stops.Count; i++)
+                            {
+                                var stop = load.Stops[i];
+                                <tr>
+                                    <td><strong>@(i + 1)</strong></td>
+                                    <td>
+                                        <span class="badge @(stop.Type == StopType.Pickup ? "bg-primary" : "bg-success")">
+                                            @stop.Type
+                                        </span>
+                                    </td>
+                                    <td>@stop.Company</td>
+                                    <td>@stop.Address</td>
+                                    <td>@stop.City</td>
+                                    <td>@stop.State</td>
+                                    <td>@stop.ZipCode</td>
+                                    <td>@stop.InitialDateTime?.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>@stop.FinalDateTime?.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>@stop.LoadedMiles?.ToString("N1")</td>
+                                    <td>@stop.EmptyMiles?.ToString("N1")</td>
+                                    <td>@stop.PickupNumber</td>
+                                    <td>@stop.Remarks</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             }
-
         </div>
 
-        <!-- ACTION BUTTONS -->
+        <!-- ============================================= -->
+        <!-- SECTION 3: FILES                             -->
+        <!-- ============================================= -->
+        <div class="lms-card mt-3">
+            <h5 class="border-bottom pb-2 mb-3">
+                <i class="bi bi-paperclip"></i> Files
+                <span class="badge bg-secondary ms-1">@load.Documents.Count</span>
+            </h5>
+
+            @if (load.Documents.Count == 0)
+            {
+                <p class="text-muted">No files uploaded for this load.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>File Name</th>
+                                <th>Size</th>
+                                <th>Uploaded At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var doc in load.Documents)
+                            {
+                                <tr>
+                                    <td><i class="bi bi-file-earmark"></i> @doc.FileName</td>
+                                    <td>@(doc.FileSize?.ToString("N0") ?? "-") bytes</td>
+                                    <td>@doc.UploadedAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            @if (doc.FileContent != null)
+                                            {
+                                                <button class="btn btn-sm btn-success" @onclick="() => DownloadFile(doc)">
+                                                    <i class="bi bi-download"></i> Download
+                                                </button>
+                                            }
+                                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteFile(doc.Id)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <!-- ============================================= -->
+        <!-- ACTION BUTTONS                               -->
+        <!-- ============================================= -->
         <div class="d-flex flex-wrap gap-2 mt-3">
-
-            <a class="btn btn-warning" href="/loads/edit/@load.Id">
-                Edit
+            <a class="btn btn-warning w-100 w-md-auto" href="/loads/edit/@load.Id">
+                <i class="bi bi-pencil-square"></i> Edit
             </a>
-
-            <a class="btn btn-secondary" href="/loads">
-                Back
-            </a>
-
+            <button class="btn btn-secondary w-100 w-md-auto" @onclick="GoBack">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </button>
         </div>
     }
-
 </div>
 
 @code {
-
-    [Parameter]
-    public int Id { get; set; }
+    [Parameter] public int Id { get; set; }
 
     private Load? load;
-    private List<Document>? documents;
+
+    // Alert
+    private bool ShowAlert = false;
+    private string AlertMessage = string.Empty;
+    private string AlertType = "success";
+    private CancellationTokenSource? _alertCts;
 
     protected override async Task OnInitializedAsync()
     {
         load = await LoadService.GetById(Id);
-        documents = await DocumentService.GetByLoad(Id);
     }
 
-    string GetStatusClass(LoadStatus status)
+    private void GoBack()
+    {
+        Nav.NavigateTo("/loads");
+    }
+
+    // ===== Download file (synchronous) =====
+    private void DownloadFile(Document doc)
+    {
+        if (doc.FileContent != null)
+        {
+            var base64 = Convert.ToBase64String(doc.FileContent);
+            var uri = $"data:{doc.ContentType ?? "application/octet-stream"};base64,{base64}";
+            Nav.NavigateTo(uri, forceLoad: false);
+        }
+    }
+
+    // ===== Delete file =====
+    private async Task DeleteFile(int docId)
+    {
+        if (load == null) return;
+
+        var doc = load.Documents.FirstOrDefault(d => d.Id == docId);
+        if (doc != null)
+        {
+            load.Documents.Remove(doc);
+            await LoadService.Update(load);
+            ShowAlertMessage($"File '{doc.FileName}' deleted successfully.", isError: false);
+            StateHasChanged();
+        }
+    }
+
+    // ===== Alert helpers =====
+    private void ShowAlertMessage(string message, bool isError = false)
+    {
+        _alertCts?.Cancel();
+        _alertCts = new CancellationTokenSource();
+
+        AlertMessage = message;
+        ShowAlert = true;
+        AlertType = isError ? "danger" : "success";
+        StateHasChanged();
+
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(1000, _alertCts.Token);
+            if (!_alertCts.Token.IsCancellationRequested)
+            {
+                await InvokeAsync(() =>
+                {
+                    ShowAlert = false;
+                    AlertMessage = string.Empty;
+                    StateHasChanged();
+                });
+            }
+        });
+    }
+
+    private void CloseAlert()
+    {
+        _alertCts?.Cancel();
+        ShowAlert = false;
+        AlertMessage = string.Empty;
+        StateHasChanged();
+    }
+
+    // ===== Utility =====
+    private string GetStatusClass(LoadStatus status)
     {
         return status switch
         {
@@ -174,24 +377,5 @@
             LoadStatus.Cancelled => "bg-danger",
             _ => "bg-dark"
         };
-    }
-
-    private async Task UploadFile(InputFileChangeEventArgs e)
-    {
-        var file = e.File;
-
-        using var stream = file.OpenReadStream(10 * 1024 * 1024);
-
-        var formFile = new FormFile(stream, 0, file.Size, file.Name, file.Name);
-
-        await DocumentService.Upload(formFile, Id);
-
-        documents = await DocumentService.GetByLoad(Id);
-    }
-
-    private async Task DeleteDoc(int docId)
-    {
-        await DocumentService.Delete(docId);
-        documents = await DocumentService.GetByLoad(Id);
     }
 }

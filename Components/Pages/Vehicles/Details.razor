@@ -11,12 +11,12 @@
 
 <PageTitle>Vehicle Details</PageTitle>
 
-<div class="page-container">
+<div class="container-fluid px-3 px-md-4 py-3">
 
     <div class="page-header d-flex justify-content-between align-items-center">
         <div>
             <div class="page-title">Vehicle Details</div>
-            <div class="page-subtitle">Full information & load history</div>
+            <div class="page-subtitle text-muted">Full information & load history</div>
         </div>
         <div>
             <span class="badge @(vehicle?.IsActive == true ? "bg-success" : "bg-secondary")" style="font-size:1rem;">
@@ -228,7 +228,7 @@
                                 <th>Status</th>
                                 <th>Pickup</th>
                                 <th>Delivery</th>
-                                <th>Price</th>
+                                <th>Amount</th>
                             </tr>
                         </thead>
 
@@ -246,13 +246,13 @@
                                         </span>
                                     </td>
 
-                                    <td>@l.PickupDate.ToShortDateString()</td>
+                                    <td>@(l.PickupDate?.ToShortDateString() ?? "-")</td>
 
                                     <td>
                                         @(l.DeliveryDate?.ToShortDateString() ?? "-")
                                     </td>
 
-                                    <td>@l.Price.ToString("N0")</td>
+                                    <td>@(l.Amount?.ToString("N0") ?? "-")</td>
                                 </tr>
                             }
                         </tbody>

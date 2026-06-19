@@ -1,42 +1,63 @@
-﻿namespace LoadManagementSystem_LMS_.Models;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-public class Load
+namespace LoadManagementSystem_LMS_.Models
 {
-    public int Id { get; set; }
+    public class Load
+    {
+        public int Id { get; set; }
 
-    public string LoadNumber { get; set; } = string.Empty;
+        // ========== Basic Information ==========
+        
+        public string LoadNumber { get; set; } = string.Empty;
 
-    public string TrackingNumber { get; set; } = string.Empty;
+        public string? TrackingNumber { get; set; }
 
-    public int CustomerId { get; set; }
+        [Required]
+        public int CustomerId { get; set; }
+        [ForeignKey(nameof(CustomerId))]
+        public Customer? Customer { get; set; }
 
-    public Customer? Customer { get; set; }
+        [Required]
+        public int DriverId { get; set; }
+        [ForeignKey(nameof(DriverId))]
+        public Driver? Driver { get; set; }
 
-    public int DriverId { get; set; }
+        [Required]
+        public int VehicleId { get; set; }
+        [ForeignKey(nameof(VehicleId))]
+        public Vehicle? Vehicle { get; set; }
 
-    public Driver? Driver { get; set; }
+        // ========== Load Type & Status ==========
+        public LoadType Type { get; set; } = LoadType.RTS;
+        public LoadStatus Status { get; set; } = LoadStatus.Pending;
 
-    public int VehicleId { get; set; }
+        // ========== Dates ==========
+        public DateTime CreatedDate { get; set; } = DateTime.Now;
+        public DateTime? PickupDate { get; set; }
+        public DateTime? DeliveryDate { get; set; }
+        public DateTime? UpdatedAt { get; set; } // ✅ اضافه شد
 
-    public Vehicle? Vehicle { get; set; }
+        // ========== Financial ==========
+        public decimal? Amount { get; set; }
+        public bool IsPaid { get; set; } = false;
 
-    public string PickupLocation { get; set; } = string.Empty;
+        // ========== Additional Info ==========
+        [StringLength(500)]
+        public string? Remarks { get; set; }
 
-    public string DeliveryLocation { get; set; } = string.Empty;
+        // ========== Navigation Properties ==========
+        public List<Stop> Stops { get; set; } = new List<Stop>(); // ✅ تغییر به List
+        public ICollection<Document> Documents { get; set; } = new List<Document>();
+    }
 
-    public decimal Weight { get; set; }
+    public enum LoadType
+    {
+        RTS, LTL, FTL, Drayage, Intermodal
+    }
 
-    public decimal Price { get; set; }
-
-    public DateTime PickupDate { get; set; }
-
-    public DateTime? DeliveryDate { get; set; }
-
-    public LoadStatus Status { get; set; }
-
-    public string Remarks { get; set; } = string.Empty;
-
-    public DateTime CreatedDate { get; set; } = DateTime.Now;
-
-    public ICollection<Document> Documents { get; set; } = new List<Document>();
+    public enum LoadStatus
+    {
+        Pending, Assigned, PickedUp, InTransit, Delivered, Cancelled
+    }
 }

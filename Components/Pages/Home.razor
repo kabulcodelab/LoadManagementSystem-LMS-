@@ -60,7 +60,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6>Revenue</h6>
-                        <h3>$@totalRevenue</h3>
+                        <h3>$@totalRevenue?.ToString("N0")</h3>
                     </div>
                     <div class="kpi-icon">💰</div>
                 </div>
@@ -113,6 +113,7 @@
     </div>
 
 </div>
+
 @code {
 
     private int totalLoads;
@@ -121,7 +122,7 @@
     private int drivers;
     private int vehicles;
     private int customers;
-    private decimal totalRevenue;
+    private decimal? totalRevenue;
 
     protected override async Task OnInitializedAsync()
     {
@@ -133,8 +134,9 @@
         vehicles = await Db.Vehicles.CountAsync();
         customers = await Db.Customers.CountAsync();
 
+        // ✅ استفاده از Amount به‌جای Price و مدیریت مقدار null
         totalRevenue = await Db.Loads
             .Where(x => x.Status == LoadStatus.Delivered)
-            .SumAsync(x => x.Price);
+            .SumAsync(x => x.Amount ?? 0);
     }
 }

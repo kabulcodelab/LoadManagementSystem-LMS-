@@ -1,4 +1,4 @@
-﻿@page "/loads"
+﻿@page "/documents"
 @attribute [Authorize]
 
 @using LoadManagementSystem_LMS_.Models
@@ -6,7 +6,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components
 
-@inject LoadService LoadService
+@inject DocumentService DocumentService
 @inject NavigationManager Nav
 
 <div class="container-fluid px-3 px-md-4 py-3">
@@ -14,13 +14,13 @@
     <!-- HEADER -->
     <div class="row align-items-center mb-4">
         <div class="col-12 col-md-8">
-            <h2 class="page-title mb-0">Loads</h2>
-            <p class="page-subtitle text-muted mb-0">Manage all shipments, tracking and delivery status</p>
+            <h2 class="page-title mb-0">Documents</h2>
+            <p class="page-subtitle text-muted mb-0">Manage all uploaded files for loads</p>
         </div>
         <div class="col-12 col-md-4 text-md-end mt-2 mt-md-0">
-            <a class="btn btn-add w-100 w-md-auto" href="/loads/create">
-                <i class="bi bi-plus-circle"></i> Create Loads +
-            </a>
+            <span class="badge bg-secondary" style="font-size:1rem;">
+                Total: @(pagedResult?.TotalCount ?? 0) files
+            </span>
         </div>
     </div>
 
@@ -33,14 +33,22 @@
         </div>
     }
 
-    <!-- SEARCH PANEL -->
+    <!-- SEARCH & FILTER -->
     <div class="lms-card mb-4">
         <div class="row g-2 align-items-end">
             <div class="col-12 col-md-3">
-                <label class="form-label fw-semibold">Search</label>
-                <input class="form-control"
-                       placeholder="Load, tracking, customer..."
-                       @bind="search" @bind:event="oninput" />
+                <label class="form-label fw-semibold">Load Number</label>
+                <input class="form-control" placeholder="Search by load number..." @bind="searchLoadNumber" @bind:event="oninput" />
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label fw-semibold">File Type</label>
+                <select class="form-select" @bind="selectedFileType">
+                    <option value="">All Types</option>
+                    @foreach (DocumentType type in Enum.GetValues(typeof(DocumentType)))
+                    {
+                        <option value="@type">@GetDocumentTypeDisplayName(type)</option>
+                    }
+                </select>
             </div>
             <div class="col-12 col-md-2">
                 <label class="form-label fw-semibold">From Date</label>
@@ -51,22 +59,12 @@
                 <input type="date" class="form-control" @bind="toDate" />
             </div>
             <div class="col-12 col-md-2">
-                <label class="form-label fw-semibold">Status</label>
-                <select class="form-select" @bind="status">
-                    <option value="">All Status</option>
-                    @foreach (var s in Enum.GetValues<LoadStatus>())
-                    {
-                        <option value="@s">@s</option>
-                    }
-                </select>
-            </div>
-            <div class="col-12 col-md-3">
                 <div class="d-flex gap-2">
                     <button class="btn btn-lms-primary w-100" @onclick="ApplyFilter">
-                        <i class="bi bi-search"></i> Search
+                        <i class="bi bi-search"></i>
                     </button>
                     <button class="btn btn-secondary w-100" @onclick="Reset">
-                        <i class="bi bi-arrow-clockwise"></i> Reset
+                        <i class="bi bi-arrow-clockwise"></i>
                     </button>
                 </div>
             </div>
@@ -79,50 +77,69 @@
             <table class="table table-striped table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th>Load No</th>
-                        <th class="d-none d-md-table-cell">Tracking</th>
-                        <th>Customer</th>
-                        <th>Driver</th>
-                        <th class="d-none d-lg-table-cell">Vehicle</th>
-                        <th>Status</th>
-                        <th>Amount</th>
-                        <th class="text-center" style="min-width:130px;">Actions</th>
+                        <th>File Name</th>
+                        <th>Type</th>
+                        <th>Load #</th>
+                        <th>Size</th>
+                        <th>Uploaded By</th>
+                        <th>Uploaded At</th>
+                        <th class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (pagedResult == null)
                     {
-                        <tr><td colspan="8" class="text-center py-4">Loading...</td></tr>
+                        <tr><td colspan="7" class="text-center py-4">Loading...</td></tr>
                     }
                     else if (!pagedResult.Items.Any())
                     {
-                        <tr><td colspan="8" class="text-center py-4 text-muted">No loads found.</td></tr>
+                        <tr><td colspan="7" class="text-center py-4 text-muted">No documents found.</td></tr>
                     }
                     else
                     {
-                        @foreach (var item in pagedResult.Items)
+                        @foreach (var doc in pagedResult.Items)
                         {
                             <tr>
-                                <td><code>@item.LoadNumber</code></td>
-                                <td class="d-none d-md-table-cell">@item.TrackingNumber</td>
-                                <td>@item.Customer?.Name</td>
-                                <td>@item.Driver?.FullName</td>
-                                <td class="d-none d-lg-table-cell">@item.Vehicle?.PlateNumber</td>
                                 <td>
-                                    <span class="badge @GetStatusClass(item.Status)">
-                                        @item.Status
+                                    <i class="bi bi-file-earmark me-1"></i>
+                                    @doc.FileName
+                                </td>
+                                <td>
+                                    <span class="badge @GetDocTypeBadge(doc.FileType)">
+                                        @GetDocumentTypeDisplayName(doc.FileType)
                                     </span>
                                 </td>
-                                <td>@(item.Amount?.ToString("N0") ?? "-")</td>
+                                <td>
+                                    <a href="/loads/details/@doc.LoadId" class="text-decoration-none">
+                                        <code>@doc.Load?.LoadNumber</code>
+                                    </a>
+                                </td>
+                                <td>@(doc.FileSize?.ToString("N0") ?? "-") bytes</td>
+                                <td>@(doc.UploadedBy ?? "-")</td>
+                                <td>@doc.UploadedAt?.ToString("yyyy-MM-dd HH:mm")</td> <!-- ✅ اصلاح شده -->
                                 <td>
                                     <div class="d-flex gap-1 justify-content-center flex-nowrap">
-                                        <a class="btn btn-sm btn-outline-info" href="/loads/details/@item.Id" title="View">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <a class="btn btn-sm btn-outline-warning" href="/loads/edit/@item.Id" title="Edit">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </a>
-                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(item.Id, item.LoadNumber)" title="Delete">
+                                        <!-- Download -->
+                                        @if (!string.IsNullOrEmpty(doc.FilePath))
+                                        {
+                                            <a class="btn btn-sm btn-outline-success"
+                                               href="@doc.FilePath"
+                                               target="_blank"
+                                               title="Download">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-outline-secondary" disabled title="No file available">
+                                                <i class="bi bi-download"></i>
+                                            </button>
+                                        }
+
+                                        <!-- Delete -->
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => ConfirmDelete(doc.Id, doc.FileName)"
+                                                title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -146,9 +163,7 @@
                 <nav>
                     <ul class="pagination pagination-sm mb-0 flex-wrap justify-content-center">
                         <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                            <button class="page-link" @onclick="() => GoToPage(currentPage - 1)">
-                                <i class="bi bi-chevron-left"></i>
-                            </button>
+                            <button class="page-link" @onclick="() => GoToPage(currentPage - 1)">«</button>
                         </li>
                         @for (int i = 1; i <= pagedResult.TotalPages; i++)
                         {
@@ -157,9 +172,7 @@
                             </li>
                         }
                         <li class="page-item @(currentPage == pagedResult.TotalPages ? "disabled" : "")">
-                            <button class="page-link" @onclick="() => GoToPage(currentPage + 1)">
-                                <i class="bi bi-chevron-right"></i>
-                            </button>
+                            <button class="page-link" @onclick="() => GoToPage(currentPage + 1)">»</button>
                         </li>
                     </ul>
                 </nav>
@@ -185,7 +198,7 @@
                         <button type="button" class="btn-close" @onclick="CancelDelete"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Are you sure you want to delete load <strong>@DeleteNumber</strong>?</p>
+                        <p>Are you sure you want to delete file <strong>@DeleteFileName</strong>?</p>
                         <p class="text-danger">This action cannot be undone.</p>
                     </div>
                     <div class="modal-footer">
@@ -200,19 +213,16 @@
 </div>
 
 @code {
-    // ===== Parameters =====
-    [Parameter] public string? Message { get; set; }
-
     // ===== Fields =====
-    private PagedResult<Load>? pagedResult;
+    private PagedResult<Document>? pagedResult;
     private int currentPage = 1;
     private const int PageSize = 10;
 
-    // Search / filter
-    private string? search;
+    // Search / Filter
+    private string? searchLoadNumber;
+    private DocumentType? selectedFileType;
     private DateTime? fromDate;
     private DateTime? toDate;
-    private LoadStatus? status;
 
     // Alert
     private bool ShowAlert = false;
@@ -220,9 +230,21 @@
     private string AlertType = "success";
     private CancellationTokenSource? _alertCts;
 
-    // Delete confirmation
+    // Delete
     private int? DeleteId;
-    private string? DeleteNumber;
+    private string? DeleteFileName;
+
+    // ===== Helper method for Display Name =====
+    private string GetDocumentTypeDisplayName(DocumentType type)
+    {
+        return type switch
+        {
+            DocumentType.RateConfirmation => "Rate Confirmation",
+            DocumentType.BillOfLading => "Bill of Lading",
+            DocumentType.Others => "Others",
+            _ => type.ToString()
+        };
+    }
 
     // ===== Lifecycle =====
     protected override async Task OnInitializedAsync()
@@ -230,24 +252,16 @@
         await LoadData();
     }
 
-    protected override void OnParametersSet()
-    {
-        if (!string.IsNullOrEmpty(Message))
-        {
-            ShowAlertMessage(Message);
-        }
-    }
-
-    // ===== Data loading =====
+    // ===== Data Loading =====
     private async Task LoadData()
     {
-        pagedResult = await LoadService.GetPaged(
+        pagedResult = await DocumentService.GetPaged(
             page: currentPage,
             pageSize: PageSize,
-            search: search,
-            from: fromDate,
-            to: toDate,
-            status: status
+            searchLoadNumber: searchLoadNumber,
+            fileType: selectedFileType,
+            fromDate: fromDate,
+            toDate: toDate
         );
     }
 
@@ -260,10 +274,10 @@
 
     private async Task Reset()
     {
-        search = null;
+        searchLoadNumber = null;
+        selectedFileType = null;
         fromDate = null;
         toDate = null;
-        status = null;
         currentPage = 1;
         await LoadData();
     }
@@ -277,17 +291,17 @@
     }
 
     // ===== Delete =====
-    private void ConfirmDelete(int id, string loadNumber)
+    private void ConfirmDelete(int id, string fileName)
     {
         DeleteId = id;
-        DeleteNumber = loadNumber;
+        DeleteFileName = fileName;
         StateHasChanged();
     }
 
     private void CancelDelete()
     {
         DeleteId = null;
-        DeleteNumber = null;
+        DeleteFileName = null;
         StateHasChanged();
     }
 
@@ -297,10 +311,10 @@
         {
             try
             {
-                await LoadService.Delete(DeleteId.Value);
+                await DocumentService.Delete(DeleteId.Value);
                 CancelDelete();
                 await LoadData();
-                ShowAlertMessage($"Load '{DeleteNumber}' was deleted successfully.", isError: false);
+                ShowAlertMessage($"File '{DeleteFileName}' deleted successfully.", isError: false);
             }
             catch (Exception ex)
             {
@@ -309,7 +323,7 @@
         }
     }
 
-    // ===== Alert helpers =====
+    // ===== Alert Helpers =====
     private void ShowAlertMessage(string message, bool isError = false)
     {
         _alertCts?.Cancel();
@@ -344,17 +358,14 @@
     }
 
     // ===== Utility =====
-    private string GetStatusClass(LoadStatus status)
+    private string GetDocTypeBadge(DocumentType type)
     {
-        return status switch
+        return type switch
         {
-            LoadStatus.Pending => "bg-secondary",
-            LoadStatus.Assigned => "bg-primary",
-            LoadStatus.PickedUp => "bg-info",
-            LoadStatus.InTransit => "bg-warning text-dark",
-            LoadStatus.Delivered => "bg-success",
-            LoadStatus.Cancelled => "bg-danger",
-            _ => "bg-dark"
+            DocumentType.RateConfirmation => "bg-primary",
+            DocumentType.BillOfLading => "bg-success",
+            DocumentType.Others => "bg-secondary",
+            _ => "bg-secondary"
         };
     }
 }

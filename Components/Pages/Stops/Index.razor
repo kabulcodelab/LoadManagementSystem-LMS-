@@ -1,4 +1,4 @@
-﻿@page "/loads"
+﻿@page "/stops"
 @attribute [Authorize]
 
 @using LoadManagementSystem_LMS_.Models
@@ -6,7 +6,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components
 
-@inject LoadService LoadService
+@inject StopService StopService
 @inject NavigationManager Nav
 
 <div class="container-fluid px-3 px-md-4 py-3">
@@ -14,13 +14,13 @@
     <!-- HEADER -->
     <div class="row align-items-center mb-4">
         <div class="col-12 col-md-8">
-            <h2 class="page-title mb-0">Loads</h2>
-            <p class="page-subtitle text-muted mb-0">Manage all shipments, tracking and delivery status</p>
+            <h2 class="page-title mb-0">Stops</h2>
+            <p class="page-subtitle text-muted mb-0">Manage all pickup and delivery stops</p>
         </div>
         <div class="col-12 col-md-4 text-md-end mt-2 mt-md-0">
-            <a class="btn btn-add w-100 w-md-auto" href="/loads/create">
-                <i class="bi bi-plus-circle"></i> Create Loads +
-            </a>
+            <span class="badge bg-secondary" style="font-size:1rem;">
+                Total: @(pagedResult?.TotalCount ?? 0) stops
+            </span>
         </div>
     </div>
 
@@ -33,14 +33,22 @@
         </div>
     }
 
-    <!-- SEARCH PANEL -->
+    <!-- SEARCH & FILTER -->
     <div class="lms-card mb-4">
         <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-4">
+                <label class="form-label fw-semibold">Load Number</label>
+                <input class="form-control" placeholder="Search by load number..." @bind="searchLoadNumber" @bind:event="oninput" />
+            </div>
             <div class="col-12 col-md-3">
-                <label class="form-label fw-semibold">Search</label>
-                <input class="form-control"
-                       placeholder="Load, tracking, customer..."
-                       @bind="search" @bind:event="oninput" />
+                <label class="form-label fw-semibold">Stop Type</label>
+                <select class="form-select" @bind="selectedStopType">
+                    <option value="">All Types</option>
+                    @foreach (StopType type in Enum.GetValues(typeof(StopType)))
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </select>
             </div>
             <div class="col-12 col-md-2">
                 <label class="form-label fw-semibold">From Date</label>
@@ -50,23 +58,13 @@
                 <label class="form-label fw-semibold">To Date</label>
                 <input type="date" class="form-control" @bind="toDate" />
             </div>
-            <div class="col-12 col-md-2">
-                <label class="form-label fw-semibold">Status</label>
-                <select class="form-select" @bind="status">
-                    <option value="">All Status</option>
-                    @foreach (var s in Enum.GetValues<LoadStatus>())
-                    {
-                        <option value="@s">@s</option>
-                    }
-                </select>
-            </div>
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-md-1">
                 <div class="d-flex gap-2">
                     <button class="btn btn-lms-primary w-100" @onclick="ApplyFilter">
-                        <i class="bi bi-search"></i> Search
+                        <i class="bi bi-search"></i>
                     </button>
                     <button class="btn btn-secondary w-100" @onclick="Reset">
-                        <i class="bi bi-arrow-clockwise"></i> Reset
+                        <i class="bi bi-arrow-clockwise"></i>
                     </button>
                 </div>
             </div>
@@ -79,50 +77,64 @@
             <table class="table table-striped table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th>Load No</th>
-                        <th class="d-none d-md-table-cell">Tracking</th>
-                        <th>Customer</th>
-                        <th>Driver</th>
-                        <th class="d-none d-lg-table-cell">Vehicle</th>
-                        <th>Status</th>
-                        <th>Amount</th>
-                        <th class="text-center" style="min-width:130px;">Actions</th>
+                        <th>#</th>
+                        <th>Load #</th>
+                        <th>Type</th>
+                        <th>Company</th>
+                        <th>Address</th>
+                        <th>City</th>
+                        <th>State</th>
+                        <th>Pickup #</th>
+                        <th>Initial Date</th>
+                        <th>Final Date</th>
+                        <th class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (pagedResult == null)
                     {
-                        <tr><td colspan="8" class="text-center py-4">Loading...</td></tr>
+                        <tr><td colspan="11" class="text-center py-4">Loading...</td></tr>
                     }
                     else if (!pagedResult.Items.Any())
                     {
-                        <tr><td colspan="8" class="text-center py-4 text-muted">No loads found.</td></tr>
+                        <tr><td colspan="11" class="text-center py-4 text-muted">No stops found.</td></tr>
                     }
                     else
                     {
-                        @foreach (var item in pagedResult.Items)
+                        @foreach (var stop in pagedResult.Items)
                         {
                             <tr>
-                                <td><code>@item.LoadNumber</code></td>
-                                <td class="d-none d-md-table-cell">@item.TrackingNumber</td>
-                                <td>@item.Customer?.Name</td>
-                                <td>@item.Driver?.FullName</td>
-                                <td class="d-none d-lg-table-cell">@item.Vehicle?.PlateNumber</td>
+                                <td><strong>@stop.Sequence</strong></td>
                                 <td>
-                                    <span class="badge @GetStatusClass(item.Status)">
-                                        @item.Status
+                                    <a href="/loads/details/@stop.LoadId" class="text-decoration-none">
+                                        <code>@stop.Load?.LoadNumber</code>
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge @(stop.Type == StopType.Pickup ? "bg-primary" : "bg-success")">
+                                        @stop.Type
                                     </span>
                                 </td>
-                                <td>@(item.Amount?.ToString("N0") ?? "-")</td>
+                                <td>@stop.Company</td>
+                                <td>@stop.Address</td>
+                                <td>@stop.City</td>
+                                <td>@stop.State</td>
+                                <td>@stop.PickupNumber</td>
+                                <td>@stop.InitialDateTime?.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>@stop.FinalDateTime?.ToString("yyyy-MM-dd HH:mm")</td>
                                 <td>
                                     <div class="d-flex gap-1 justify-content-center flex-nowrap">
-                                        <a class="btn btn-sm btn-outline-info" href="/loads/details/@item.Id" title="View">
+                                        <!-- View Load -->
+                                        <a class="btn btn-sm btn-outline-info"
+                                           href="/loads/details/@stop.LoadId"
+                                           title="View Load">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <a class="btn btn-sm btn-outline-warning" href="/loads/edit/@item.Id" title="Edit">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </a>
-                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(item.Id, item.LoadNumber)" title="Delete">
+
+                                        <!-- Delete -->
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => ConfirmDelete(stop.Id, stop.Sequence, stop.Load?.LoadNumber)"
+                                                title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -146,9 +158,7 @@
                 <nav>
                     <ul class="pagination pagination-sm mb-0 flex-wrap justify-content-center">
                         <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                            <button class="page-link" @onclick="() => GoToPage(currentPage - 1)">
-                                <i class="bi bi-chevron-left"></i>
-                            </button>
+                            <button class="page-link" @onclick="() => GoToPage(currentPage - 1)">«</button>
                         </li>
                         @for (int i = 1; i <= pagedResult.TotalPages; i++)
                         {
@@ -157,9 +167,7 @@
                             </li>
                         }
                         <li class="page-item @(currentPage == pagedResult.TotalPages ? "disabled" : "")">
-                            <button class="page-link" @onclick="() => GoToPage(currentPage + 1)">
-                                <i class="bi bi-chevron-right"></i>
-                            </button>
+                            <button class="page-link" @onclick="() => GoToPage(currentPage + 1)">»</button>
                         </li>
                     </ul>
                 </nav>
@@ -185,7 +193,7 @@
                         <button type="button" class="btn-close" @onclick="CancelDelete"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Are you sure you want to delete load <strong>@DeleteNumber</strong>?</p>
+                        <p>Are you sure you want to delete <strong>Stop #@DeleteSequence</strong> from load <strong>@DeleteLoadNumber</strong>?</p>
                         <p class="text-danger">This action cannot be undone.</p>
                     </div>
                     <div class="modal-footer">
@@ -200,19 +208,16 @@
 </div>
 
 @code {
-    // ===== Parameters =====
-    [Parameter] public string? Message { get; set; }
-
     // ===== Fields =====
-    private PagedResult<Load>? pagedResult;
+    private PagedResult<Stop>? pagedResult;
     private int currentPage = 1;
     private const int PageSize = 10;
 
-    // Search / filter
-    private string? search;
+    // Search / Filter
+    private string? searchLoadNumber;
+    private StopType? selectedStopType;
     private DateTime? fromDate;
     private DateTime? toDate;
-    private LoadStatus? status;
 
     // Alert
     private bool ShowAlert = false;
@@ -220,9 +225,10 @@
     private string AlertType = "success";
     private CancellationTokenSource? _alertCts;
 
-    // Delete confirmation
+    // Delete
     private int? DeleteId;
-    private string? DeleteNumber;
+    private int? DeleteSequence;
+    private string? DeleteLoadNumber;
 
     // ===== Lifecycle =====
     protected override async Task OnInitializedAsync()
@@ -230,25 +236,52 @@
         await LoadData();
     }
 
-    protected override void OnParametersSet()
-    {
-        if (!string.IsNullOrEmpty(Message))
-        {
-            ShowAlertMessage(Message);
-        }
-    }
-
-    // ===== Data loading =====
+    // ===== Data Loading =====
     private async Task LoadData()
     {
-        pagedResult = await LoadService.GetPaged(
-            page: currentPage,
-            pageSize: PageSize,
-            search: search,
-            from: fromDate,
-            to: toDate,
-            status: status
-        );
+        // Since we need to filter by Load Number, we'll use the service method
+        // that gets stops with Load included, then filter in memory.
+        // For better performance, you could add a GetPaged method to StopService.
+        var allStops = await StopService.GetStopsWithLoad();
+
+        var query = allStops.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchLoadNumber))
+        {
+            query = query.Where(s => s.Load != null && s.Load.LoadNumber.Contains(searchLoadNumber));
+        }
+
+        if (selectedStopType.HasValue)
+        {
+            query = query.Where(s => s.Type == selectedStopType.Value);
+        }
+
+        if (fromDate.HasValue)
+        {
+            query = query.Where(s => s.CreatedAt >= fromDate.Value);
+        }
+
+        if (toDate.HasValue)
+        {
+            query = query.Where(s => s.CreatedAt <= toDate.Value);
+        }
+
+        var totalCount = query.Count();
+
+        var items = query
+            .OrderBy(s => s.LoadId)
+            .ThenBy(s => s.Sequence)
+            .Skip((currentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+
+        pagedResult = new PagedResult<Stop>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageSize = PageSize,
+            CurrentPage = currentPage
+        };
     }
 
     // ===== Search / Filter =====
@@ -260,10 +293,10 @@
 
     private async Task Reset()
     {
-        search = null;
+        searchLoadNumber = null;
+        selectedStopType = null;
         fromDate = null;
         toDate = null;
-        status = null;
         currentPage = 1;
         await LoadData();
     }
@@ -277,17 +310,19 @@
     }
 
     // ===== Delete =====
-    private void ConfirmDelete(int id, string loadNumber)
+    private void ConfirmDelete(int id, int sequence, string? loadNumber)
     {
         DeleteId = id;
-        DeleteNumber = loadNumber;
+        DeleteSequence = sequence;
+        DeleteLoadNumber = loadNumber ?? "Unknown";
         StateHasChanged();
     }
 
     private void CancelDelete()
     {
         DeleteId = null;
-        DeleteNumber = null;
+        DeleteSequence = null;
+        DeleteLoadNumber = null;
         StateHasChanged();
     }
 
@@ -297,10 +332,10 @@
         {
             try
             {
-                await LoadService.Delete(DeleteId.Value);
+                await StopService.Delete(DeleteId.Value);
                 CancelDelete();
                 await LoadData();
-                ShowAlertMessage($"Load '{DeleteNumber}' was deleted successfully.", isError: false);
+                ShowAlertMessage($"Stop #{DeleteSequence} deleted successfully.", isError: false);
             }
             catch (Exception ex)
             {
@@ -309,7 +344,7 @@
         }
     }
 
-    // ===== Alert helpers =====
+    // ===== Alert Helpers =====
     private void ShowAlertMessage(string message, bool isError = false)
     {
         _alertCts?.Cancel();
@@ -341,20 +376,5 @@
         ShowAlert = false;
         AlertMessage = string.Empty;
         StateHasChanged();
-    }
-
-    // ===== Utility =====
-    private string GetStatusClass(LoadStatus status)
-    {
-        return status switch
-        {
-            LoadStatus.Pending => "bg-secondary",
-            LoadStatus.Assigned => "bg-primary",
-            LoadStatus.PickedUp => "bg-info",
-            LoadStatus.InTransit => "bg-warning text-dark",
-            LoadStatus.Delivered => "bg-success",
-            LoadStatus.Cancelled => "bg-danger",
-            _ => "bg-dark"
-        };
     }
 }

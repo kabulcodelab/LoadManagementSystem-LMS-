@@ -182,7 +182,7 @@
                                 <th>Status</th>
                                 <th>Pickup</th>
                                 <th>Delivery</th>
-                                <th>Price</th>
+                                <th>Amount</th>
                             </tr>
                         </thead>
 
@@ -199,9 +199,9 @@
                                         </span>
                                     </td>
 
-                                    <td>@l.PickupDate.ToShortDateString()</td>
+                                    <td>@(l.PickupDate?.ToShortDateString() ?? "-")</td>
                                     <td>@(l.DeliveryDate?.ToShortDateString() ?? "-")</td>
-                                    <td>@l.Price.ToString("N0")</td>
+                                    <td>@(l.Amount?.ToString("N0") ?? "-")</td>
                                 </tr>
                             }
                         </tbody>

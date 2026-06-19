@@ -4,6 +4,7 @@ using LoadManagementSystem_LMS_.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LoadManagementSystemLMS.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260618090213_AddUniquePlateNumber")]
+    partial class AddUniquePlateNumber
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -141,36 +144,23 @@ namespace LoadManagementSystemLMS.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ContentType")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<byte[]>("FileContent")
-                        .HasColumnType("varbinary(max)");
-
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("FilePath")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("FileSize")
-                        .HasColumnType("int");
-
-                    b.Property<int>("FileType")
-                        .HasColumnType("int");
+                    b.Property<string>("FileType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("LoadId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime?>("UploadedAt")
+                    b.Property<DateTime>("UploadedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("UploadedBy")
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -271,9 +261,6 @@ namespace LoadManagementSystemLMS.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal?>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
@@ -283,41 +270,43 @@ namespace LoadManagementSystemLMS.Migrations
                     b.Property<DateTime?>("DeliveryDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("DeliveryLocation")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("DriverId")
                         .HasColumnType("int");
-
-                    b.Property<bool>("IsPaid")
-                        .HasColumnType("bit");
 
                     b.Property<string>("LoadNumber")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("PickupDate")
+                    b.Property<DateTime>("PickupDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Remarks")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<int>("Status")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
-                    b.Property<string>("TrackingNumber")
+                    b.Property<string>("PickupLocation")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Type")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
+                    b.Property<string>("Remarks")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TrackingNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("VehicleId")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("Weight")
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -429,11 +418,11 @@ namespace LoadManagementSystemLMS.Migrations
 
                     b.HasIndex("PlateNumber")
                         .IsUnique()
-                        .HasFilter("[PlateNumber] IS NOT NULL AND [PlateNumber] <> ''");
+                        .HasFilter("[PlateNumber] IS NOT NULL AND [PlateNumber] != ''");
 
                     b.HasIndex("VIN")
                         .IsUnique()
-                        .HasFilter("[VIN] IS NOT NULL AND [VIN] <> ''");
+                        .HasFilter("[VIN] IS NOT NULL AND [VIN] != ''");
 
                     b.ToTable("Vehicles");
                 });
@@ -571,71 +560,6 @@ namespace LoadManagementSystemLMS.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("Stop", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Address")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("City")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Company")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal?>("EmptyMiles")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime?>("FinalDateTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("InitialDateTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("LoadId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("LoadedMiles")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("PickupNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Remarks")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Sequence")
-                        .HasColumnType("int");
-
-                    b.Property<string>("State")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ZipCode")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LoadId", "Sequence")
-                        .IsUnique()
-                        .HasFilter("[LoadId] IS NOT NULL AND [Sequence] IS NOT NULL");
-
-                    b.ToTable("Stops");
-                });
-
             modelBuilder.Entity("LoadManagementSystem_LMS_.Models.Document", b =>
                 {
                     b.HasOne("LoadManagementSystem_LMS_.Models.Load", "Load")
@@ -745,17 +669,6 @@ namespace LoadManagementSystemLMS.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Stop", b =>
-                {
-                    b.HasOne("LoadManagementSystem_LMS_.Models.Load", "Load")
-                        .WithMany("Stops")
-                        .HasForeignKey("LoadId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Load");
-                });
-
             modelBuilder.Entity("LoadManagementSystem_LMS_.Models.Customer", b =>
                 {
                     b.Navigation("Loads");
@@ -769,8 +682,6 @@ namespace LoadManagementSystemLMS.Migrations
             modelBuilder.Entity("LoadManagementSystem_LMS_.Models.Load", b =>
                 {
                     b.Navigation("Documents");
-
-                    b.Navigation("Stops");
                 });
 
             modelBuilder.Entity("LoadManagementSystem_LMS_.Models.Vehicle", b =>
