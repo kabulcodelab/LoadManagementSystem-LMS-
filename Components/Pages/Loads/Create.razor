@@ -174,7 +174,7 @@
         </div>
 
         <!-- ============================================= -->
-        <!-- TAB 2: STOPS                                  -->
+        <!-- TAB 2: STOPS (با حذف ایمن)                   -->
         <!-- ============================================= -->
         <div class="tab-pane @(activeTab == "stops" ? "show active" : "")">
             <div class="lms-card">
@@ -198,7 +198,11 @@
 
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <h6 class="mb-0">Stop @(i + 1)</h6>
-                                <button type="button" class="btn-close" @onclick='() => RemoveStop(i)' title="Remove this stop" disabled="@(load.Stops.Count == 1)"></button>
+                                <button type="button" class="btn-close"
+                                        @onclick='() => RemoveStop(stop)'
+                                        title="Remove this stop"
+                                        disabled="@(load.Stops.Count == 1)">
+                                </button>
                             </div>
 
                             <div class="row g-3">
@@ -284,21 +288,59 @@
         </div>
 
         <!-- ============================================= -->
-        <!-- TAB 3: FILES                                 -->
+        <!-- TAB 3: FILES (با انتخاب نوع و پیش‌نمایش)   -->
         <!-- ============================================= -->
         <div class="tab-pane @(activeTab == "files" ? "show active" : "")">
             <div class="lms-card">
                 <h5 class="mb-3">Upload Documents</h5>
 
-                <InputFile class="form-control mb-3" multiple OnChange="HandleFileUpload" />
+                <!-- ========================================== -->
+                <!-- 1. Rate Confirmation                       -->
+                <!-- ========================================== -->
+                <div class="border rounded p-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Rate Confirmation</h6>
+                        <InputFile class="form-control w-auto"
+                                   OnChange="@((e) => HandleFileUpload(e, DocumentType.RateConfirmation))"
+                                   multiple />
+                    </div>
+                </div>
 
+                <!-- ========================================== -->
+                <!-- 2. Bill of Lading                          -->
+                <!-- ========================================== -->
+                <div class="border rounded p-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Bill of Lading</h6>
+                        <InputFile class="form-control w-auto"
+                                   OnChange="@((e) => HandleFileUpload(e, DocumentType.BillOfLading))"
+                                   multiple />
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- 3. Other                                   -->
+                <!-- ========================================== -->
+                <div class="border rounded p-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Other</h6>
+                        <InputFile class="form-control w-auto"
+                                   OnChange="@((e) => HandleFileUpload(e, DocumentType.Others))"
+                                   multiple />
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- Uploaded Files Table                       -->
+                <!-- ========================================== -->
                 @if (load.Documents.Count > 0)
                 {
-                    <div class="table-responsive">
+                    <div class="table-responsive mt-3">
                         <table class="table table-striped">
                             <thead>
                                 <tr>
                                     <th>File Name</th>
+                                    <th>Type</th>
                                     <th>Size</th>
                                     <th>Uploaded</th>
                                     <th>Actions</th>
@@ -309,12 +351,36 @@
                                 {
                                     <tr>
                                         <td>@doc.FileName</td>
+                                        <td>
+                                            <span class="badge @GetDocTypeBadge(doc.FileType)">
+                                                @GetDocumentTypeDisplayName(doc.FileType)
+                                            </span>
+                                        </td>
                                         <td>@(doc.FileSize?.ToString("N0") ?? "-") bytes</td>
                                         <td>@doc.UploadedAt?.ToString("yyyy-MM-dd HH:mm")</td>
                                         <td>
-                                            <button type="button" class="btn btn-sm btn-danger" @onclick='() => RemoveFile(doc)'>
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                            <div class="d-flex gap-1">
+                                                <!-- View Button -->
+                                                @if (doc.FileContent != null && doc.FileContent.Length > 0)
+                                                {
+                                                    <button class="btn btn-sm btn-outline-success"
+                                                            @onclick='() => ViewFile(doc)'>
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                }
+                                                else if (!string.IsNullOrEmpty(doc.FilePath))
+                                                {
+                                                    <a class="btn btn-sm btn-outline-success"
+                                                       href="@doc.FilePath" target="_blank">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                }
+                                                <!-- Delete Button -->
+                                                <button type="button" class="btn btn-sm btn-danger"
+                                                        @onclick='() => RemoveFile(doc)'>
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 }
@@ -324,7 +390,7 @@
                 }
                 else
                 {
-                    <p class="text-muted">No files uploaded yet.</p>
+                    <p class="text-muted mt-3">No files uploaded yet.</p>
                 }
             </div>
         </div>
@@ -394,22 +460,23 @@
         StateHasChanged();
     }
 
-    private void RemoveStop(int index)
+    private void RemoveStop(Stop stop)
     {
-        if (load.Stops.Count > 1)
+        if (load.Stops.Count > 1 && load.Stops.Contains(stop))
         {
-            load.Stops.RemoveAt(index);
+            load.Stops.Remove(stop);
             StateHasChanged();
         }
     }
 
     // ===== File Management =====
-    private async Task HandleFileUpload(InputFileChangeEventArgs e)
+    // Handles upload for a specific document type
+    private async Task HandleFileUpload(InputFileChangeEventArgs e, DocumentType fileType)
     {
         foreach (var file in e.GetMultipleFiles())
         {
             // Limit file size to 10MB
-            var memoryStream = new MemoryStream();
+            using var memoryStream = new MemoryStream();
             await file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(memoryStream);
 
             var document = new Document
@@ -418,7 +485,8 @@
                 FileSize = (int)file.Size,
                 FileContent = memoryStream.ToArray(),
                 UploadedAt = DateTime.Now,
-                ContentType = file.ContentType
+                ContentType = file.ContentType,
+                FileType = fileType  // ✅ set the type from the upload section
             };
 
             load.Documents.Add(document);
@@ -431,6 +499,41 @@
     {
         load.Documents.Remove(doc);
         StateHasChanged();
+    }
+
+    // ===== View File =====
+    private void ViewFile(Document doc)
+    {
+        if (doc.FileContent != null && doc.FileContent.Length > 0)
+        {
+            var base64 = Convert.ToBase64String(doc.FileContent);
+            var mimeType = doc.ContentType ?? "application/octet-stream";
+            var uri = $"data:{mimeType};base64,{base64}";
+            Nav.NavigateTo(uri, forceLoad: false);
+        }
+    }
+
+    // ===== Helper methods for DocumentType display =====
+    private string GetDocumentTypeDisplayName(DocumentType type)
+    {
+        return type switch
+        {
+            DocumentType.RateConfirmation => "Rate Confirmation",
+            DocumentType.BillOfLading => "Bill of Lading",
+            DocumentType.Others => "Other",
+            _ => type.ToString()
+        };
+    }
+
+    private string GetDocTypeBadge(DocumentType type)
+    {
+        return type switch
+        {
+            DocumentType.RateConfirmation => "bg-primary",
+            DocumentType.BillOfLading => "bg-success",
+            DocumentType.Others => "bg-secondary",
+            _ => "bg-secondary"
+        };
     }
 
     // ===== Save =====

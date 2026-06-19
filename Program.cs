@@ -20,6 +20,7 @@ builder.Services.AddScoped<LoadService>();
 builder.Services.AddScoped<DocumentService>();
 builder.Services.AddScoped<StopService>();
 
+
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();

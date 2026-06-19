@@ -199,7 +199,7 @@
             </div>
 
             <!-- ============================================= -->
-            <!-- TAB 2: STOPS                                  -->
+            <!-- TAB 2: STOPS (fixed deletion)                -->
             <!-- ============================================= -->
             <div class="tab-pane @(activeTab == "stops" ? "show active" : "")">
                 <div class="lms-card">
@@ -218,12 +218,17 @@
                     {
                         @for (int i = 0; i < load.Stops.Count; i++)
                         {
-                            var stop = load.Stops[i];
-                            <div class="border rounded p-3 mb-3 position-relative">
+                            var stop = load.Stops[i];   // ✅ capture the stop object
+                                                        <div class="border rounded p-3 mb-3 position-relative">
 
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <h6 class="mb-0">Stop @(i + 1)</h6>
-                                    <button type="button" class="btn-close" @onclick='() => RemoveStop(i)' title="Remove this stop" disabled="@(load.Stops.Count == 1)"></button>
+                                    <!-- ✅ pass the stop object, not index -->
+                                    <button type="button" class="btn-close"
+                                            @onclick='() => RemoveStop(stop)'
+                                            title="Remove this stop"
+                                            disabled="@(load.Stops.Count == 1)">
+                                    </button>
                                 </div>
 
                                 <div class="row g-3">
@@ -420,11 +425,12 @@
         StateHasChanged();
     }
 
-    private void RemoveStop(int index)
+    // ✅ Fixed: Remove by object, not index
+    private void RemoveStop(Stop stop)
     {
-        if (load != null && load.Stops.Count > 1)
+        if (load != null && load.Stops.Count > 1 && load.Stops.Contains(stop))
         {
-            load.Stops.RemoveAt(index);
+            load.Stops.Remove(stop);
             StateHasChanged();
         }
     }
