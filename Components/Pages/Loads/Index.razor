@@ -60,9 +60,10 @@
                     }
                 </select>
             </div>
+            <!-- ===== FIXED PAYMENT FILTER ===== -->
             <div class="col-12 col-md-2">
                 <label class="form-label fw-semibold">Payment</label>
-                <select class="form-select" @bind="paymentFilter">
+                <select class="form-select" @bind="paymentFilterString">
                     <option value="">All</option>
                     <option value="true">Paid</option>
                     <option value="false">Not Paid</option>
@@ -117,7 +118,6 @@
                                 <td>@item.Driver?.FullName</td>
                                 <td class="d-none d-lg-table-cell">@item.Vehicle?.PlateNumber</td>
                                 <td>
-                                    <!-- ✅ Fixed: manual binding with @onchange -->
                                     <select class="form-select form-select-sm"
                                             value="@item.Status"
                                             @onchange="(e) => { var newStatus = (LoadStatus)Enum.Parse(typeof(LoadStatus), e.Value.ToString()); if (newStatus != item.Status) { item.Status = newStatus; UpdateStatus(item); } }">
@@ -235,7 +235,8 @@
     private DateTime? fromDate;
     private DateTime? toDate;
     private LoadStatus? status;
-    private bool? paymentFilter;
+    // ✅ Changed from bool? to string? for proper binding
+    private string? paymentFilterString;
 
     // Alert
     private bool ShowAlert = false;
@@ -264,6 +265,14 @@
     // ===== Data loading =====
     private async Task LoadData()
     {
+        // Convert payment filter string to bool?
+        bool? isPaid = paymentFilterString switch
+        {
+            "true" => true,
+            "false" => false,
+            _ => null
+        };
+
         pagedResult = await LoadService.GetPaged(
             page: currentPage,
             pageSize: PageSize,
@@ -271,7 +280,7 @@
             from: fromDate,
             to: toDate,
             status: status,
-            isPaid: paymentFilter
+            isPaid: isPaid
         );
     }
 
@@ -288,7 +297,7 @@
         fromDate = null;
         toDate = null;
         status = null;
-        paymentFilter = null;
+        paymentFilterString = null;  // Reset payment filter
         currentPage = 1;
         await LoadData();
     }
@@ -323,14 +332,13 @@
         {
             bool newPaid = !item.IsPaid;
             await LoadService.UpdatePaidStatus(item.Id, newPaid);
-            item.IsPaid = newPaid;
+            // ✅ Refresh the list to reflect the change
+            await LoadData();
             ShowAlertMessage($"Payment status updated to {(newPaid ? "Paid" : "Not Paid")}.", isError: false);
-            StateHasChanged();
         }
         catch (Exception ex)
         {
             ShowAlertMessage($"Error updating payment status: {ex.Message}", isError: true);
-            await LoadData();
         }
     }
 

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LoadManagementSystemLMS.Migrations
 {
     /// <inheritdoc />
-    public partial class vehicedataupdate : Migration
+    public partial class initials : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -183,11 +183,16 @@ namespace LoadManagementSystemLMS.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    LoadId = table.Column<int>(type: "int", nullable: false),
                     FileName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    FilePath = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    FileType = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    UploadedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    LoadId = table.Column<int>(type: "int", nullable: false)
+                    FilePath = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    FileContent = table.Column<byte[]>(type: "varbinary(max)", nullable: true),
+                    ContentType = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    FileSize = table.Column<int>(type: "int", nullable: true),
+                    FileType = table.Column<int>(type: "int", nullable: false),
+                    UploadedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UploadedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -234,8 +239,8 @@ namespace LoadManagementSystemLMS.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     VehicleCode = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    PlateNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    VIN = table.Column<string>(type: "nvarchar(17)", maxLength: 17, nullable: false),
+                    PlateNumber = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    VIN = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     EngineNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Model = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     VehicleType = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -277,19 +282,19 @@ namespace LoadManagementSystemLMS.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     LoadNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    TrackingNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TrackingNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CustomerId = table.Column<int>(type: "int", nullable: false),
                     DriverId = table.Column<int>(type: "int", nullable: false),
                     VehicleId = table.Column<int>(type: "int", nullable: false),
-                    PickupLocation = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    DeliveryLocation = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Weight = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    PickupDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Type = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
+                    Status = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    PickupDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     DeliveryDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    Remarks = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    IsPaid = table.Column<bool>(type: "bit", nullable: false),
+                    Remarks = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -310,6 +315,40 @@ namespace LoadManagementSystemLMS.Migrations
                         name: "FK_Loads_Vehicles_VehicleId",
                         column: x => x.VehicleId,
                         principalTable: "Vehicles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Stops",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    LoadId = table.Column<int>(type: "int", nullable: false),
+                    Type = table.Column<int>(type: "int", nullable: false),
+                    Company = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    InitialDateTime = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    FinalDateTime = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Address = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    City = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    State = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ZipCode = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PickupNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Remarks = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LoadedMiles = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    EmptyMiles = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    Sequence = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Stops", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Stops_Loads_LoadId",
+                        column: x => x.LoadId,
+                        principalTable: "Loads",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -379,6 +418,13 @@ namespace LoadManagementSystemLMS.Migrations
                 column: "VehicleId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Stops_LoadId_Sequence",
+                table: "Stops",
+                columns: new[] { "LoadId", "Sequence" },
+                unique: true,
+                filter: "[LoadId] IS NOT NULL AND [Sequence] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Vehicles_CurrentDriverId",
                 table: "Vehicles",
                 column: "CurrentDriverId",
@@ -386,11 +432,18 @@ namespace LoadManagementSystemLMS.Migrations
                 filter: "[CurrentDriverId] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Vehicles_PlateNumber",
+                table: "Vehicles",
+                column: "PlateNumber",
+                unique: true,
+                filter: "[PlateNumber] IS NOT NULL AND [PlateNumber] <> ''");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Vehicles_VIN",
                 table: "Vehicles",
                 column: "VIN",
                 unique: true,
-                filter: "[VIN] IS NOT NULL AND [VIN] != ''");
+                filter: "[VIN] IS NOT NULL AND [VIN] <> ''");
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Documents_Loads_LoadId",
@@ -433,6 +486,9 @@ namespace LoadManagementSystemLMS.Migrations
 
             migrationBuilder.DropTable(
                 name: "Documents");
+
+            migrationBuilder.DropTable(
+                name: "Stops");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
