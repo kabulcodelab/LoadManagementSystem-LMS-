@@ -22,7 +22,16 @@
         <p class="page-subtitle text-muted">Update shipment information, stops, and files</p>
     </div>
 
-    <!-- ALERT -->
+    <!-- ====== PROCESSING ALERT ====== -->
+    @if (IsProcessing)
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <strong><i class="bi bi-arrow-repeat spinner-border spinner-border-sm me-2"></i> Updating...</strong>
+            Please wait while the load is being updated.
+        </div>
+    }
+
+    <!-- ====== RESULT ALERT (Success/Error) ====== -->
     @if (ShowAlert)
     {
         <div class="alert alert-@AlertType alert-dismissible fade show" role="alert">
@@ -427,10 +436,14 @@
             <!-- BUTTONS                                      -->
             <!-- ============================================= -->
             <div class="d-flex flex-wrap gap-2 mt-4">
-                <button type="submit" class="btn btn-add w-100 w-md-auto">
-                    <i class="bi bi-save"></i> Update Load
+                <button type="submit" class="btn btn-add w-100 w-md-auto" disabled="@IsProcessing">
+                    @if (IsProcessing)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                    }
+                    <i class="bi bi-save"></i> @(IsProcessing ? "Updating..." : "Update Load")
                 </button>
-                <button type="button" class="btn btn-secondary w-100 w-md-auto" @onclick="Cancel">
+                <button type="button" class="btn btn-secondary w-100 w-md-auto" @onclick="Cancel" disabled="@IsProcessing">
                     <i class="bi bi-x-circle"></i> Cancel
                 </button>
             </div>
@@ -475,7 +488,8 @@
 
     private string activeTab = "info";
 
-    // Alert
+    // ===== Alert Flags =====
+    private bool IsProcessing = false;           // ✅ Display "Updating..." alert
     private bool ShowAlert = false;
     private string AlertMessage = string.Empty;
     private string AlertType = "success";
@@ -626,9 +640,14 @@
     // ===== Save =====
     private async Task HandleValidSubmit()
     {
+        // Show processing alert and disable buttons
+        IsProcessing = true;
+        StateHasChanged();
+
         try
         {
             await LoadService.Update(load!);
+            // Success
             ShowAlertMessage($"Load '{load!.LoadNumber}' updated successfully!", isError: false);
             await Task.Delay(1000);
             Nav.NavigateTo("/loads");
@@ -636,6 +655,11 @@
         catch (Exception ex)
         {
             ShowAlertMessage($"Error: {ex.Message}", isError: true);
+        }
+        finally
+        {
+            IsProcessing = false;
+            StateHasChanged();
         }
     }
 

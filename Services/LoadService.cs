@@ -27,7 +27,7 @@ public class LoadService
     }
 
     // ================================================
-    // GET PAGED (with search, date filter, status filter)
+    // GET PAGED (with search, date, status, type, and isPaid)
     // ================================================
     public async Task<PagedResult<Load>> GetPaged(
         int page,
@@ -36,7 +36,8 @@ public class LoadService
         DateTime? from = null,
         DateTime? to = null,
         LoadStatus? status = null,
-        LoadType? type = null)
+        LoadType? type = null,
+        bool? isPaid = null)   // ✅ NEW filter
     {
         var query = _context.Loads
             .Include(x => x.Customer)
@@ -44,7 +45,7 @@ public class LoadService
             .Include(x => x.Vehicle)
             .AsQueryable();
 
-        // 🔍 Search (LoadNumber, Tracking, Customer, Driver, Vehicle Plate)
+        // 🔍 Search
         if (!string.IsNullOrWhiteSpace(search))
         {
             query = query.Where(x =>
@@ -56,10 +57,9 @@ public class LoadService
             );
         }
 
-        // 📅 Date filter (CreatedDate range)
+        // 📅 Date filter
         if (from.HasValue)
             query = query.Where(x => x.CreatedDate >= from.Value);
-
         if (to.HasValue)
             query = query.Where(x => x.CreatedDate <= to.Value);
 
@@ -70,6 +70,10 @@ public class LoadService
         // 🏷️ Type filter
         if (type.HasValue)
             query = query.Where(x => x.Type == type.Value);
+
+        // 💰 Payment filter (NEW)
+        if (isPaid.HasValue)
+            query = query.Where(x => x.IsPaid == isPaid.Value);
 
         var totalCount = await query.CountAsync();
 
@@ -97,7 +101,7 @@ public class LoadService
             .Include(x => x.Customer)
             .Include(x => x.Driver)
             .Include(x => x.Vehicle)
-            .Include(x => x.Stops.OrderBy(s => s.Sequence))  // Stops ordered by sequence
+            .Include(x => x.Stops.OrderBy(s => s.Sequence))
             .Include(x => x.Documents)
             .FirstOrDefaultAsync(x => x.Id == id);
     }
@@ -107,7 +111,6 @@ public class LoadService
     // ================================================
     public async Task Add(Load load)
     {
-        // Auto-generate LoadNumber if empty
         if (string.IsNullOrWhiteSpace(load.LoadNumber))
         {
             var lastLoad = await _context.Loads
@@ -116,7 +119,6 @@ public class LoadService
                 .FirstOrDefaultAsync();
 
             int nextNumber = 1;
-
             if (!string.IsNullOrEmpty(lastLoad))
             {
                 var parts = lastLoad.Split('-');
@@ -125,17 +127,15 @@ public class LoadService
                     nextNumber = lastNum + 1;
                 }
             }
-
             load.LoadNumber = $"LON-{nextNumber:D3}";
         }
 
-        // Set sequence for Stops
         int seq = 1;
         foreach (var stop in load.Stops)
         {
             stop.Sequence = seq++;
             stop.CreatedAt = DateTime.UtcNow;
-            stop.LoadId = 0; // Will be set after load is added
+            stop.LoadId = 0;
         }
 
         load.CreatedDate = DateTime.Now;
@@ -145,11 +145,10 @@ public class LoadService
     }
 
     // ================================================
-    // UPDATE (with sequence update)
+    // UPDATE (full update with sequence update)
     // ================================================
     public async Task Update(Load load)
     {
-        // Update sequence for Stops
         int seq = 1;
         foreach (var stop in load.Stops)
         {
@@ -162,7 +161,35 @@ public class LoadService
     }
 
     // ================================================
-    // DELETE
+    // UPDATE STATUS ONLY (for inline editing)
+    // ================================================
+    public async Task UpdateStatus(int loadId, LoadStatus newStatus)
+    {
+        var load = await _context.Loads.FindAsync(loadId);
+        if (load == null)
+            throw new Exception("Load not found.");
+
+        load.Status = newStatus;
+        load.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+    }
+
+    // ================================================
+    // UPDATE PAYMENT STATUS ONLY (for inline editing)
+    // ================================================
+    public async Task UpdatePaidStatus(int loadId, bool isPaid)
+    {
+        var load = await _context.Loads.FindAsync(loadId);
+        if (load == null)
+            throw new Exception("Load not found.");
+
+        load.IsPaid = isPaid;
+        load.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+    }
+
+    // ================================================
+    // DELETE (with related entities)
     // ================================================
     public async Task Delete(int id)
     {
@@ -173,7 +200,6 @@ public class LoadService
 
         if (load != null)
         {
-            // Remove related Stops and Documents (cascade delete should handle if configured)
             _context.Stops.RemoveRange(load.Stops);
             _context.Documents.RemoveRange(load.Documents);
             _context.Loads.Remove(load);
@@ -182,7 +208,7 @@ public class LoadService
     }
 
     // ================================================
-    // FILTER (legacy - keep for compatibility)
+    // FILTER (legacy – kept for compatibility)
     // ================================================
     public async Task<List<Load>> GetFiltered(
         string? search,
@@ -209,7 +235,6 @@ public class LoadService
 
         if (from.HasValue)
             query = query.Where(x => x.CreatedDate >= from.Value);
-
         if (to.HasValue)
             query = query.Where(x => x.CreatedDate <= to.Value);
 

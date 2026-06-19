@@ -16,7 +16,7 @@ public class DocumentService
     }
 
     // ================================================
-    // UPLOAD FILE (with DocumentType)
+    // UPLOAD FILE (unchanged)
     // ================================================
     public async Task Upload(
         IFormFile file,
@@ -25,23 +25,18 @@ public class DocumentService
         string? uploadedBy = null,
         string? description = null)
     {
-        // Ensure upload directory exists
         var folder = Path.Combine(_env.WebRootPath, "uploads", "loads");
-
         if (!Directory.Exists(folder))
             Directory.CreateDirectory(folder);
 
-        // Generate unique file name to avoid collisions
         var uniqueFileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
         var fullPath = Path.Combine(folder, uniqueFileName);
 
-        // Save physical file
         using (var stream = new FileStream(fullPath, FileMode.Create))
         {
             await file.CopyToAsync(stream);
         }
 
-        // Create document record
         var document = new Document
         {
             LoadId = loadId,
@@ -55,24 +50,51 @@ public class DocumentService
             Description = description
         };
 
-        // Save to database
         _context.Documents.Add(document);
         await _context.SaveChangesAsync();
     }
 
     // ================================================
-    // GET DOCUMENTS BY LOAD ID
+    // GET DOCUMENTS BY LOAD ID (metadata only – no binary)
     // ================================================
     public async Task<List<Document>> GetByLoad(int loadId)
     {
         return await _context.Documents
             .Where(d => d.LoadId == loadId)
+            .Select(d => new Document
+            {
+                Id = d.Id,
+                FileName = d.FileName,
+                FileType = d.FileType,
+                FileSize = d.FileSize,
+                UploadedAt = d.UploadedAt,
+                ContentType = d.ContentType,
+                FilePath = d.FilePath,
+                // FileContent is NOT selected – keeps it light
+            })
             .OrderByDescending(d => d.UploadedAt)
             .ToListAsync();
     }
 
     // ================================================
-    // GET DOCUMENT BY ID
+    // GET DOCUMENT WITH BINARY CONTENT (for viewing)
+    // ================================================
+    public async Task<Document?> GetDocumentWithContent(int id)
+    {
+        return await _context.Documents
+            .Where(d => d.Id == id)
+            .Select(d => new Document
+            {
+                Id = d.Id,
+                FileName = d.FileName,
+                FileContent = d.FileContent,
+                ContentType = d.ContentType
+            })
+            .FirstOrDefaultAsync();
+    }
+
+    // ================================================
+    // GET DOCUMENT BY ID (full entity – legacy, keep as is)
     // ================================================
     public async Task<Document?> GetById(int id)
     {
@@ -81,14 +103,13 @@ public class DocumentService
     }
 
     // ================================================
-    // DELETE DOCUMENT (physical file + record)
+    // DELETE DOCUMENT (unchanged)
     // ================================================
     public async Task Delete(int id)
     {
         var doc = await _context.Documents.FindAsync(id);
         if (doc == null) return;
 
-        // Delete physical file if exists
         if (!string.IsNullOrEmpty(doc.FilePath))
         {
             var fullPath = Path.Combine(_env.WebRootPath, doc.FilePath.TrimStart('/'));
@@ -96,13 +117,12 @@ public class DocumentService
                 File.Delete(fullPath);
         }
 
-        // Delete database record
         _context.Documents.Remove(doc);
         await _context.SaveChangesAsync();
     }
 
     // ================================================
-    // DELETE ALL DOCUMENTS FOR A LOAD (for cascading delete)
+    // DELETE ALL DOCUMENTS FOR A LOAD (unchanged)
     // ================================================
     public async Task DeleteAllByLoad(int loadId)
     {
@@ -112,7 +132,6 @@ public class DocumentService
 
         foreach (var doc in docs)
         {
-            // Delete physical files
             if (!string.IsNullOrEmpty(doc.FilePath))
             {
                 var fullPath = Path.Combine(_env.WebRootPath, doc.FilePath.TrimStart('/'));
@@ -126,7 +145,7 @@ public class DocumentService
     }
 
     // ================================================
-    // GET PAGED DOCUMENTS (with search & filter)
+    // GET PAGED DOCUMENTS (metadata only, already fine)
     // ================================================
     public async Task<PagedResult<Document>> GetPaged(
         int page,
@@ -140,19 +159,16 @@ public class DocumentService
             .Include(d => d.Load)
             .AsQueryable();
 
-        // 🔍 Search by Load Number
         if (!string.IsNullOrWhiteSpace(searchLoadNumber))
         {
             query = query.Where(d => d.Load != null && d.Load.LoadNumber.Contains(searchLoadNumber));
         }
 
-        // 🏷️ Filter by File Type
         if (fileType.HasValue)
         {
             query = query.Where(d => d.FileType == fileType.Value);
         }
 
-        // 📅 Filter by Upload Date
         if (fromDate.HasValue)
             query = query.Where(d => d.UploadedAt >= fromDate.Value);
 
@@ -161,10 +177,22 @@ public class DocumentService
 
         var totalCount = await query.CountAsync();
 
+        // Project to metadata only (omit FileContent)
         var items = await query
             .OrderByDescending(d => d.UploadedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .Select(d => new Document
+            {
+                Id = d.Id,
+                FileName = d.FileName,
+                FileType = d.FileType,
+                FileSize = d.FileSize,
+                UploadedAt = d.UploadedAt,
+                ContentType = d.ContentType,
+                FilePath = d.FilePath,
+                Load = d.Load
+            })
             .ToListAsync();
 
         return new PagedResult<Document>

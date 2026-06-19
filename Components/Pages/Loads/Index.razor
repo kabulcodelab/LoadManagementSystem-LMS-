@@ -60,6 +60,14 @@
                     }
                 </select>
             </div>
+            <div class="col-12 col-md-2">
+                <label class="form-label fw-semibold">Payment</label>
+                <select class="form-select" @bind="paymentFilter">
+                    <option value="">All</option>
+                    <option value="true">Paid</option>
+                    <option value="false">Not Paid</option>
+                </select>
+            </div>
             <div class="col-12 col-md-3">
                 <div class="d-flex gap-2">
                     <button class="btn btn-lms-primary w-100" @onclick="ApplyFilter">
@@ -85,18 +93,18 @@
                         <th>Driver</th>
                         <th class="d-none d-lg-table-cell">Vehicle</th>
                         <th>Status</th>
-                        <th>Amount</th>
+                        <th>Payment</th>
                         <th class="text-center" style="min-width:130px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (pagedResult == null)
                     {
-                        <tr><td colspan="8" class="text-center py-4">Loading...</td></tr>
+                        <tr><td colspan="9" class="text-center py-4">Loading...</td></tr>
                     }
                     else if (!pagedResult.Items.Any())
                     {
-                        <tr><td colspan="8" class="text-center py-4 text-muted">No loads found.</td></tr>
+                        <tr><td colspan="9" class="text-center py-4 text-muted">No loads found.</td></tr>
                     }
                     else
                     {
@@ -109,11 +117,25 @@
                                 <td>@item.Driver?.FullName</td>
                                 <td class="d-none d-lg-table-cell">@item.Vehicle?.PlateNumber</td>
                                 <td>
-                                    <span class="badge @GetStatusClass(item.Status)">
-                                        @item.Status
-                                    </span>
+                                    <!-- ✅ Fixed: manual binding with @onchange -->
+                                    <select class="form-select form-select-sm"
+                                            value="@item.Status"
+                                            @onchange="(e) => { var newStatus = (LoadStatus)Enum.Parse(typeof(LoadStatus), e.Value.ToString()); if (newStatus != item.Status) { item.Status = newStatus; UpdateStatus(item); } }">
+                                        @foreach (var s in Enum.GetValues<LoadStatus>())
+                                        {
+                                            <option value="@s">@s</option>
+                                        }
+                                    </select>
                                 </td>
-                                <td>@(item.Amount?.ToString("N0") ?? "-")</td>
+                                <td>
+                                    <span class="badge @(item.IsPaid ? "bg-success" : "bg-warning text-dark")"
+                                          style="cursor:pointer; font-size:0.9rem;"
+                                          @onclick="() => TogglePayment(item)">
+                                        @(item.IsPaid ? "Paid" : "Not Paid")
+                                    </span>
+                                    <br />
+                                    <small>@(item.Amount?.ToString("N0") ?? "-")</small>
+                                </td>
                                 <td>
                                     <div class="d-flex gap-1 justify-content-center flex-nowrap">
                                         <a class="btn btn-sm btn-outline-info" href="/loads/details/@item.Id" title="View">
@@ -213,6 +235,7 @@
     private DateTime? fromDate;
     private DateTime? toDate;
     private LoadStatus? status;
+    private bool? paymentFilter;
 
     // Alert
     private bool ShowAlert = false;
@@ -247,7 +270,8 @@
             search: search,
             from: fromDate,
             to: toDate,
-            status: status
+            status: status,
+            isPaid: paymentFilter
         );
     }
 
@@ -264,6 +288,7 @@
         fromDate = null;
         toDate = null;
         status = null;
+        paymentFilter = null;
         currentPage = 1;
         await LoadData();
     }
@@ -274,6 +299,39 @@
         if (page < 1 || page > pagedResult?.TotalPages) return;
         currentPage = page;
         await LoadData();
+    }
+
+    // ===== Inline Status Update =====
+    private async Task UpdateStatus(Load item)
+    {
+        try
+        {
+            await LoadService.UpdateStatus(item.Id, item.Status);
+            ShowAlertMessage($"Status updated to {item.Status}.", isError: false);
+        }
+        catch (Exception ex)
+        {
+            ShowAlertMessage($"Error updating status: {ex.Message}", isError: true);
+            await LoadData(); // revert to safe state
+        }
+    }
+
+    // ===== Inline Payment Toggle =====
+    private async Task TogglePayment(Load item)
+    {
+        try
+        {
+            bool newPaid = !item.IsPaid;
+            await LoadService.UpdatePaidStatus(item.Id, newPaid);
+            item.IsPaid = newPaid;
+            ShowAlertMessage($"Payment status updated to {(newPaid ? "Paid" : "Not Paid")}.", isError: false);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            ShowAlertMessage($"Error updating payment status: {ex.Message}", isError: true);
+            await LoadData();
+        }
     }
 
     // ===== Delete =====
@@ -344,7 +402,7 @@
     }
 
     // ===== Utility =====
-    private string GetStatusClass(LoadStatus status)
+    private string GetStatusClass(LoadStatus status) // kept for reference if needed elsewhere
     {
         return status switch
         {

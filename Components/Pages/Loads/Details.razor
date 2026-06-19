@@ -5,9 +5,13 @@
 @using LoadManagementSystem_LMS_.Services
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components
+@using Microsoft.JSInterop
+@using System.IO
 
 @inject LoadService LoadService
+@inject DocumentService DocumentService
 @inject NavigationManager Nav
+@inject IJSRuntime JSRuntime
 
 <div class="container-fluid px-3 px-md-4 py-3">
 
@@ -217,15 +221,15 @@
         </div>
 
         <!-- ============================================= -->
-        <!-- SECTION 3: FILES                             -->
+        <!-- SECTION 3: FILES (Optimized – metadata only) -->
         <!-- ============================================= -->
         <div class="lms-card mt-3">
             <h5 class="border-bottom pb-2 mb-3">
                 <i class="bi bi-paperclip"></i> Files
-                <span class="badge bg-secondary ms-1">@load.Documents.Count</span>
+                <span class="badge bg-secondary ms-1">@(documents?.Count ?? 0)</span>
             </h5>
 
-            @if (load.Documents.Count == 0)
+            @if (documents == null || documents.Count == 0)
             {
                 <p class="text-muted">No files uploaded for this load.</p>
             }
@@ -236,27 +240,32 @@
                         <thead>
                             <tr>
                                 <th>File Name</th>
+                                <th>Type</th>
                                 <th>Size</th>
                                 <th>Uploaded At</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var doc in load.Documents)
+                            @foreach (var doc in documents)
                             {
                                 <tr>
                                     <td><i class="bi bi-file-earmark"></i> @doc.FileName</td>
+                                    <td>
+                                        <span class="badge @GetDocTypeBadge(doc.FileType)">
+                                            @GetDocumentTypeDisplayName(doc.FileType)
+                                        </span>
+                                    </td>
                                     <td>@(doc.FileSize?.ToString("N0") ?? "-") bytes</td>
                                     <td>@doc.UploadedAt?.ToString("yyyy-MM-dd HH:mm")</td>
                                     <td>
                                         <div class="d-flex gap-1">
-                                            @if (doc.FileContent != null)
-                                            {
-                                                <button class="btn btn-sm btn-success" @onclick="() => DownloadFile(doc)">
-                                                    <i class="bi bi-download"></i> Download
-                                                </button>
-                                            }
-                                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteFile(doc.Id)">
+                                            <!-- View Button -->
+                                            <button class="btn btn-sm btn-outline-success" @onclick='() => ViewFile(doc.Id)'>
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <!-- Delete Button -->
+                                            <button class="btn btn-sm btn-outline-danger" @onclick='() => DeleteFile(doc.Id, doc.FileName)'>
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
@@ -283,10 +292,34 @@
     }
 </div>
 
+<!-- ============================================= -->
+<!-- JavaScript function to view Base64 files      -->
+<!-- ============================================= -->
+<script>
+    window.viewBase64File = function (base64String, contentType, fileName) {
+        try {
+            const byteCharacters = atob(base64String);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: contentType });
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+        } catch (error) {
+            console.error('Error viewing file:', error);
+            alert('Could not open the file. Please try downloading it.');
+        }
+    };
+</script>
+
 @code {
     [Parameter] public int Id { get; set; }
 
     private Load? load;
+    private List<Document>? documents;
 
     // Alert
     private bool ShowAlert = false;
@@ -294,40 +327,132 @@
     private string AlertType = "success";
     private CancellationTokenSource? _alertCts;
 
+    // ===== Lifecycle =====
     protected override async Task OnInitializedAsync()
     {
+        // 1. Load the load without Documents to avoid huge binary data
         load = await LoadService.GetById(Id);
+
+        // 2. Load document metadata separately (without FileContent)
+        if (load != null)
+        {
+            documents = await DocumentService.GetByLoad(Id);
+        }
     }
 
+    // ===== Go Back =====
     private void GoBack()
     {
         Nav.NavigateTo("/loads");
     }
 
-    // ===== Download file (synchronous) =====
-    private void DownloadFile(Document doc)
+    // ===== View File – fetch content on demand =====
+    private async Task ViewFile(int docId)
     {
-        if (doc.FileContent != null)
+        try
         {
+            // Get the full document with binary content
+            var doc = await DocumentService.GetDocumentWithContent(docId);
+            if (doc == null || doc.FileContent == null || doc.FileContent.Length == 0)
+            {
+                ShowAlertMessage("File content is empty or unavailable.", isError: true);
+                return;
+            }
+
             var base64 = Convert.ToBase64String(doc.FileContent);
-            var uri = $"data:{doc.ContentType ?? "application/octet-stream"};base64,{base64}";
-            Nav.NavigateTo(uri, forceLoad: false);
+            var mimeType = GetMimeType(doc.FileName);
+            await JSRuntime.InvokeVoidAsync("viewBase64File", base64, mimeType, doc.FileName);
+        }
+        catch (Exception ex)
+        {
+            ShowAlertMessage($"Error viewing file: {ex.Message}", isError: true);
         }
     }
 
-    // ===== Delete file =====
-    private async Task DeleteFile(int docId)
+    // ===== Delete File =====
+    private async Task DeleteFile(int docId, string fileName)
     {
-        if (load == null) return;
-
-        var doc = load.Documents.FirstOrDefault(d => d.Id == docId);
-        if (doc != null)
+        try
         {
-            load.Documents.Remove(doc);
-            await LoadService.Update(load);
-            ShowAlertMessage($"File '{doc.FileName}' deleted successfully.", isError: false);
-            StateHasChanged();
+            await DocumentService.Delete(docId);
+            // Refresh the document list
+            if (load != null)
+            {
+                documents = await DocumentService.GetByLoad(Id);
+            }
+            ShowAlertMessage($"File '{fileName}' deleted successfully.", isError: false);
         }
+        catch (Exception ex)
+        {
+            ShowAlertMessage($"Error deleting file: {ex.Message}", isError: true);
+        }
+    }
+
+    // ===== Helper: Get MIME type from file name =====
+    private string GetMimeType(string fileName)
+    {
+        var ext = Path.GetExtension(fileName)?.ToLowerInvariant();
+        return ext switch
+        {
+            ".pdf" => "application/pdf",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            ".bmp" => "image/bmp",
+            ".webp" => "image/webp",
+            ".doc" => "application/msword",
+            ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ".xls" => "application/vnd.ms-excel",
+            ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ".ppt" => "application/vnd.ms-powerpoint",
+            ".pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            ".txt" => "text/plain",
+            ".csv" => "text/csv",
+            ".zip" => "application/zip",
+            ".rar" => "application/x-rar-compressed",
+            ".7z" => "application/x-7z-compressed",
+            ".xml" => "application/xml",
+            ".json" => "application/json",
+            _ => "application/octet-stream"
+        };
+    }
+
+    // ===== Helper methods for DocumentType display =====
+    private string GetDocumentTypeDisplayName(DocumentType type)
+    {
+        return type switch
+        {
+            DocumentType.RateConfirmation => "Rate Confirmation",
+            DocumentType.BillOfLading => "Bill of Lading",
+            DocumentType.Others => "Other",
+            _ => type.ToString()
+        };
+    }
+
+    private string GetDocTypeBadge(DocumentType type)
+    {
+        return type switch
+        {
+            DocumentType.RateConfirmation => "bg-primary",
+            DocumentType.BillOfLading => "bg-success",
+            DocumentType.Others => "bg-secondary",
+            _ => "bg-secondary"
+        };
+    }
+
+    // ===== Status badge for Load =====
+    private string GetStatusClass(LoadStatus status)
+    {
+        return status switch
+        {
+            LoadStatus.Pending => "bg-secondary",
+            LoadStatus.Assigned => "bg-primary",
+            LoadStatus.PickedUp => "bg-info",
+            LoadStatus.InTransit => "bg-warning text-dark",
+            LoadStatus.Delivered => "bg-success",
+            LoadStatus.Cancelled => "bg-danger",
+            _ => "bg-dark"
+        };
     }
 
     // ===== Alert helpers =====
@@ -343,7 +468,7 @@
 
         _ = Task.Run(async () =>
         {
-            await Task.Delay(1000, _alertCts.Token);
+            await Task.Delay(3000, _alertCts.Token);
             if (!_alertCts.Token.IsCancellationRequested)
             {
                 await InvokeAsync(() =>
@@ -362,20 +487,5 @@
         ShowAlert = false;
         AlertMessage = string.Empty;
         StateHasChanged();
-    }
-
-    // ===== Utility =====
-    private string GetStatusClass(LoadStatus status)
-    {
-        return status switch
-        {
-            LoadStatus.Pending => "bg-secondary",
-            LoadStatus.Assigned => "bg-primary",
-            LoadStatus.PickedUp => "bg-info",
-            LoadStatus.InTransit => "bg-warning text-dark",
-            LoadStatus.Delivered => "bg-success",
-            LoadStatus.Cancelled => "bg-danger",
-            _ => "bg-dark"
-        };
     }
 }
