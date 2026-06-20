@@ -37,7 +37,7 @@ public class LoadService
         DateTime? to = null,
         LoadStatus? status = null,
         LoadType? type = null,
-        bool? isPaid = null)   // ✅ NEW filter
+        bool? isPaid = null)
     {
         var query = _context.Loads
             .Include(x => x.Customer)
@@ -71,7 +71,7 @@ public class LoadService
         if (type.HasValue)
             query = query.Where(x => x.Type == type.Value);
 
-        // 💰 Payment filter (NEW)
+        // 💰 Payment filter
         if (isPaid.HasValue)
             query = query.Where(x => x.IsPaid == isPaid.Value);
 
@@ -157,8 +157,8 @@ public class LoadService
             stop.UpdatedAt = DateTime.UtcNow;
         }
 
-        // ✅ Set UpdatedAt for the Load itself
-        load.UpdatedAt = DateTime.UtcNow;   // یا DateTime.Now بسته به نیاز
+        // Set UpdatedAt for the Load itself
+        load.UpdatedAt = DateTime.UtcNow;
 
         _context.Loads.Update(load);
         await _context.SaveChangesAsync();
@@ -246,5 +246,14 @@ public class LoadService
             query = query.Where(x => x.Status == status.Value);
 
         return await query.OrderByDescending(x => x.CreatedDate).ToListAsync();
+    }
+
+    // ================================================
+    // DETACH LOAD (to prevent accidental saves)
+    // ================================================
+    public void DetachLoad(Load load)
+    {
+        if (load != null)
+            _context.Entry(load).State = EntityState.Detached;
     }
 }

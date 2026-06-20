@@ -258,17 +258,13 @@
                                         <InputText class="form-control" @bind-Value="stop.Company" placeholder="Company name" />
                                     </div>
 
-                                    <!-- ========================================== -->
-                                    <!-- Initial Date/Time – using InputDate like Create -->
-                                    <!-- ========================================== -->
+                                    <!-- Initial Date/Time -->
                                     <div class="col-12 col-md-3">
                                         <label>Initial Date/Time</label>
                                         <InputDate class="form-control" @bind-Value="stop.InitialDateTime" />
                                     </div>
 
-                                    <!-- ========================================== -->
-                                    <!-- Final Date/Time – using InputDate like Create -->
-                                    <!-- ========================================== -->
+                                    <!-- Final Date/Time -->
                                     <div class="col-12 col-md-3">
                                         <label>Final Date/Time</label>
                                         <InputDate class="form-control" @bind-Value="stop.FinalDateTime" />
@@ -286,9 +282,7 @@
                                         <InputText class="form-control" @bind-Value="stop.City" placeholder="City" />
                                     </div>
 
-                                    <!-- ========================================== -->
-                                    <!-- State – Dropdown with US States           -->
-                                    <!-- ========================================== -->
+                                    <!-- State (Dropdown) -->
                                     <div class="col-12 col-md-3">
                                         <label>State</label>
                                         <InputSelect class="form-select" @bind-Value="stop.State">
@@ -337,15 +331,13 @@
             </div>
 
             <!-- ============================================= -->
-            <!-- TAB 3: FILES (with document type selection)  -->
+            <!-- TAB 3: FILES                                 -->
             <!-- ============================================= -->
             <div class="tab-pane @(activeTab == "files" ? "show active" : "")">
                 <div class="lms-card">
                     <h5 class="mb-3">Upload Documents</h5>
 
-                    <!-- ========================================== -->
-                    <!-- 1. Rate Confirmation                       -->
-                    <!-- ========================================== -->
+                    <!-- Rate Confirmation -->
                     <div class="border rounded p-3 mb-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Rate Confirmation</h6>
@@ -355,9 +347,7 @@
                         </div>
                     </div>
 
-                    <!-- ========================================== -->
-                    <!-- 2. Bill of Lading                          -->
-                    <!-- ========================================== -->
+                    <!-- Bill of Lading -->
                     <div class="border rounded p-3 mb-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Bill of Lading</h6>
@@ -367,9 +357,7 @@
                         </div>
                     </div>
 
-                    <!-- ========================================== -->
-                    <!-- 3. Other                                   -->
-                    <!-- ========================================== -->
+                    <!-- Other -->
                     <div class="border rounded p-3 mb-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Other</h6>
@@ -379,9 +367,7 @@
                         </div>
                     </div>
 
-                    <!-- ========================================== -->
-                    <!-- Uploaded Files Table                       -->
-                    <!-- ========================================== -->
+                    <!-- Uploaded Files Table -->
                     @if (load.Documents.Count > 0)
                     {
                         <div class="table-responsive mt-3">
@@ -525,7 +511,10 @@
         }
         else
         {
-            // ✅ Set default date/time for any stop that has null values
+            // ✅ Detach from context to prevent accidental saves
+            LoadService.DetachLoad(load);
+
+            // ✅ Set default date/time for stops with null values
             var now = DateTime.Now;
             foreach (var stop in load.Stops)
             {
