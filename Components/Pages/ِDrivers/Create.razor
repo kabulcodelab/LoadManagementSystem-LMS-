@@ -41,21 +41,21 @@
 
                 <!-- Full Name (Required) -->
                 <div class="col-12 col-md-4">
-                    <label>Full Name *</label>
+                    <label>Full Name <span class="text-danger">*</span></label>
                     <InputText class="form-control" @bind-Value="driver.FullName" />
                     <ValidationMessage For="@(() => driver.FullName)" />
                 </div>
 
                 <!-- National Code (Required, no length restriction) -->
                 <div class="col-12 col-md-4">
-                    <label>National Code *</label>
+                    <label>National Code <span class="text-danger">*</span></label>
                     <InputText class="form-control" @bind-Value="driver.NationalCode" />
                     <ValidationMessage For="@(() => driver.NationalCode)" />
                 </div>
 
                 <!-- Phone Number (Required, 11 digits including country code) -->
                 <div class="col-12 col-md-6">
-                    <label>Primary Phone * (11 digits including US country code: 1 + 10 digits)</label>
+                    <label>Primary Phone  (11 digits including US country code: 1 + 10 digits) <span class="text-danger">*</span></label>
                     <InputText class="form-control" @bind-Value="driver.PhoneNumber" />
                     <ValidationMessage For="@(() => driver.PhoneNumber)" />
                 </div>
@@ -81,7 +81,7 @@
 
                 <!-- License Number (Required) -->
                 <div class="col-12 col-md-4">
-                    <label>License Number *</label>
+                    <label>License Number <span class="text-danger">*</span></label>
                     <InputText class="form-control" @bind-Value="driver.LicenseNumber" />
                     <ValidationMessage For="@(() => driver.LicenseNumber)" />
                 </div>

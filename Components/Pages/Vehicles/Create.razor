@@ -45,7 +45,7 @@
 
                 <!-- Plate Number (Required) -->
                 <div class="col-12 col-md-4">
-                    <label>Plate Number *</label>
+                    <label>Plate Number <span class="text-danger">*</span></label>
                     <InputText class="form-control" @bind-Value="vehicle.PlateNumber" />
                     <ValidationMessage For="@(() => vehicle.PlateNumber)" />
                 </div>
@@ -64,14 +64,14 @@
 
                 <!-- Model (Required) -->
                 <div class="col-12 col-md-4">
-                    <label>Model *</label>
+                    <label>Model <span class="text-danger">*</span></label>
                     <InputText class="form-control" @bind-Value="vehicle.Model" />
                     <ValidationMessage For="@(() => vehicle.Model)" />
                 </div>
 
                 <!-- Vehicle Type (Required) -->
                 <div class="col-12 col-md-4">
-                    <label>Vehicle Type *</label>
+                    <label>Vehicle Type <span class="text-danger">*</span></label>
                     <InputText class="form-control" @bind-Value="vehicle.VehicleType" />
                     <ValidationMessage For="@(() => vehicle.VehicleType)" />
                 </div>
@@ -84,7 +84,7 @@
 
                 <!-- Capacity (Required) -->
                 <div class="col-12 col-md-4">
-                    <label>Capacity * (kg)</label>
+                    <label>Capacity (kg) <span class="text-danger">*</span></label>
                     <InputNumber class="form-control" @bind-Value="vehicle.Capacity" />
                     <ValidationMessage For="@(() => vehicle.Capacity)" />
                 </div>

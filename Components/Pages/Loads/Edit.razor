@@ -109,7 +109,7 @@
 
                         <!-- Customer -->
                         <div class="col-12 col-md-4">
-                            <label>Customer *</label>
+                            <label>Customer <span class="text-danger">*</span></label>
                             <InputSelect class="form-select" @bind-Value="load.CustomerId">
                                 <option value="0">Select Customer</option>
                                 @foreach (var c in customers)
@@ -122,7 +122,7 @@
 
                         <!-- Driver -->
                         <div class="col-12 col-md-4">
-                            <label>Driver *</label>
+                            <label>Driver <span class="text-danger">*</span></label>
                             <InputSelect class="form-select" @bind-Value="load.DriverId">
                                 <option value="0">Select Driver</option>
                                 @foreach (var d in drivers)
@@ -135,7 +135,7 @@
 
                         <!-- Vehicle -->
                         <div class="col-12 col-md-4">
-                            <label>Vehicle *</label>
+                            <label>Vehicle <span class="text-danger">*</span></label>
                             <InputSelect class="form-select" @bind-Value="load.VehicleId">
                                 <option value="0">Select Vehicle</option>
                                 @foreach (var v in vehicles)
