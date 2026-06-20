@@ -21,6 +21,7 @@ builder.Services.AddScoped<LoadService>();
 builder.Services.AddScoped<DocumentService>();
 builder.Services.AddScoped<StopService>();
 builder.Services.AddMudServices();
+builder.Services.AddScoped<DashboardService>();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();

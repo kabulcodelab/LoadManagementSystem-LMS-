@@ -1,142 +1,205 @@
 ﻿@page "/"
 @attribute [Authorize]
 
-@using LoadManagementSystem_LMS_.Data
 @using LoadManagementSystem_LMS_.Models
+@using LoadManagementSystem_LMS_.Services
 @using Microsoft.AspNetCore.Authorization
-@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components
 
-@inject ApplicationDbContext Db
+@inject DashboardService DashboardService
+@inject NavigationManager Nav
 
 <div class="page-container">
 
     <!-- HEADER -->
-    <div class="page-header">
-        <h1 class="page-title">Dashboard</h1>
-        <div class="page-subtitle">Overview of system performance</div>
+    <div class="page-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="page-title">Dashboard</h1>
+            <p class="page-subtitle">Overview of system performance</p>
+        </div>
     </div>
 
-    <!-- KPI SECTION -->
-    <div class="row g-3">
+    <!-- LOADING SPINNER -->
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading dashboard data...</p>
+        </div>
+    }
+    else
+    {
+        <!-- KPI SECTION -->
+        <div class="row g-3">
 
-        <div class="col-12 col-sm-6 col-lg-3">
-            <div class="kpi-card border-start border-primary border-4 shadow-sm">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6>Total Loads</h6>
-                        <h3>@totalLoads</h3>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card border-start border-primary border-4 shadow-sm" style="cursor:pointer;" @onclick='() => Nav.NavigateTo("/loads")'>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6>Total Loads</h6>
+                            <h3>@data.TotalLoads</h3>
+                        </div>
+                        <div class="kpi-icon">🚚</div>
                     </div>
-                    <div class="kpi-icon">🚚</div>
                 </div>
             </div>
-        </div>
 
-        <div class="col-12 col-sm-6 col-lg-3">
-            <div class="kpi-card border-start border-warning border-4 shadow-sm">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6>Pending</h6>
-                        <h3>@pendingLoads</h3>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card border-start border-warning border-4 shadow-sm" style="cursor:pointer;" @onclick='() => Nav.NavigateTo("/loads?status=Pending")'>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6>Pending</h6>
+                            <h3>@data.PendingLoads</h3>
+                        </div>
+                        <div class="kpi-icon">⏳</div>
                     </div>
-                    <div class="kpi-icon">⏳</div>
                 </div>
             </div>
-        </div>
 
-        <div class="col-12 col-sm-6 col-lg-3">
-            <div class="kpi-card border-start border-success border-4 shadow-sm">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6>Delivered</h6>
-                        <h3>@deliveredLoads</h3>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card border-start border-success border-4 shadow-sm" style="cursor:pointer;" @onclick='() => Nav.NavigateTo("/loads?status=Delivered")'>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6>Delivered</h6>
+                            <h3>@data.DeliveredLoads</h3>
+                        </div>
+                        <div class="kpi-icon">✅</div>
                     </div>
-                    <div class="kpi-icon">✅</div>
                 </div>
             </div>
-        </div>
 
-        <div class="col-12 col-sm-6 col-lg-3">
-            <div class="kpi-card border-start border-info border-4 shadow-sm">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6>Revenue</h6>
-                        <h3>$@totalRevenue?.ToString("N0")</h3>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-card border-start border-info border-4 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6>Revenue</h6>
+                            <h3>$@data.TotalRevenue.ToString("N0")</h3>
+                        </div>
+                        <div class="kpi-icon">💰</div>
                     </div>
-                    <div class="kpi-icon">💰</div>
                 </div>
             </div>
+
         </div>
 
-    </div>
+        <br />
 
-    <br />
+        <!-- SECOND ROW -->
+        <div class="row g-3">
 
-    <!-- SECOND ROW -->
-    <div class="row g-3">
-
-        <div class="col-12 col-md-4">
-            <div class="kpi-card shadow-sm">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6>Drivers</h6>
-                        <h3>@drivers</h3>
+            <div class="col-12 col-md-4">
+                <div class="kpi-card shadow-sm" style="cursor:pointer;" @onclick='() => Nav.NavigateTo("/drivers")'>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6>Drivers</h6>
+                            <h3>@data.Drivers</h3>
+                        </div>
+                        <div class="kpi-icon">👨‍✈️</div>
                     </div>
-                    <div class="kpi-icon">👨‍✈️</div>
                 </div>
             </div>
-        </div>
 
-        <div class="col-12 col-md-4">
-            <div class="kpi-card shadow-sm">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6>Vehicles</h6>
-                        <h3>@vehicles</h3>
+            <div class="col-12 col-md-4">
+                <div class="kpi-card shadow-sm" style="cursor:pointer;" @onclick='() => Nav.NavigateTo("/vehicles")'>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6>Vehicles</h6>
+                            <h3>@data.Vehicles</h3>
+                        </div>
+                        <div class="kpi-icon">🚛</div>
                     </div>
-                    <div class="kpi-icon">🚛</div>
                 </div>
             </div>
-        </div>
 
-        <div class="col-12 col-md-4">
-            <div class="kpi-card shadow-sm">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6>Customers</h6>
-                        <h3>@customers</h3>
+            <div class="col-12 col-md-4">
+                <div class="kpi-card shadow-sm" style="cursor:pointer;" @onclick='() => Nav.NavigateTo("/customers")'>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6>Customers</h6>
+                            <h3>@data.Customers</h3>
+                        </div>
+                        <div class="kpi-icon">🏢</div>
                     </div>
-                    <div class="kpi-icon">🏢</div>
                 </div>
             </div>
+
         </div>
 
-    </div>
+        <br />
+
+        <!-- RECENT LOADS TABLE -->
+        <div class="lms-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">📋 Recent Loads</h5>
+                <a href="/loads" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+
+            @if (data.RecentLoads.Count > 0)
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Load #</th>
+                                <th>Customer</th>
+                                <th>Status</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var load in data.RecentLoads)
+                            {
+                                <tr>
+                                    <td><code>@load.LoadNumber</code></td>
+                                    <td>@load.CustomerName</td>
+                                    <td><span class="badge @GetStatusClass(load.Status)">@load.Status</span></td>
+                                    <td>@(load.Amount?.ToString("N0") ?? "-")</td>
+                                    <td>@load.CreatedDate.ToShortDateString()</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted">No recent loads found.</p>
+            }
+        </div>
+    }
 
 </div>
 
 @code {
-
-    private int totalLoads;
-    private int pendingLoads;
-    private int deliveredLoads;
-    private int drivers;
-    private int vehicles;
-    private int customers;
-    private decimal? totalRevenue;
+    private DashboardData data = new();
+    private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        totalLoads = await Db.Loads.CountAsync();
-        pendingLoads = await Db.Loads.CountAsync(x => x.Status == LoadStatus.Pending);
-        deliveredLoads = await Db.Loads.CountAsync(x => x.Status == LoadStatus.Delivered);
+        try
+        {
+            data = await DashboardService.GetDashboardData();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
 
-        drivers = await Db.Drivers.CountAsync();
-        vehicles = await Db.Vehicles.CountAsync();
-        customers = await Db.Customers.CountAsync();
-
-        // ✅ استفاده از Amount به‌جای Price و مدیریت مقدار null
-        totalRevenue = await Db.Loads
-            .Where(x => x.Status == LoadStatus.Delivered)
-            .SumAsync(x => x.Amount ?? 0);
+    private string GetStatusClass(LoadStatus status)
+    {
+        return status switch
+        {
+            LoadStatus.Pending => "bg-secondary",
+            LoadStatus.Assigned => "bg-primary",
+            LoadStatus.PickedUp => "bg-info",
+            LoadStatus.InTransit => "bg-warning text-dark",
+            LoadStatus.Delivered => "bg-success",
+            LoadStatus.Cancelled => "bg-danger",
+            _ => "bg-dark"
+        };
     }
 }
