@@ -1,114 +1,169 @@
 ﻿@page "/customers/edit/{Id:int}"
 @attribute [Authorize]
+
 @using LoadManagementSystem_LMS_.Models
 @using LoadManagementSystem_LMS_.Services
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
 
 @inject CustomerService CustomerService
-@inject NavigationManager Navigation
+@inject NavigationManager Nav
 
 <PageTitle>Edit Customer</PageTitle>
 
-<div class="page-container">
+<div class="container-fluid px-3 px-md-4 py-3">
 
-    <div class="page-header">
-        <div class="page-title">Edit Customer</div>
-        <div class="page-subtitle">Update customer information</div>
+    <div class="page-header mb-4">
+        <h2 class="page-title">Edit Customer</h2>
+        <p class="page-subtitle text-muted">Update customer information</p>
     </div>
 
-    @if (customer == null)
-    {
-        <div class="lms-card">
-            Loading...
-        </div>
-    }
-    else
-    {
-        <div class="lms-card">
+    <div class="lms-card">
 
-            <EditForm Model="@customer" OnValidSubmit="Update">
+        <!-- ====== ALERT (Success/Error) ====== -->
+        @if (ShowAlert)
+        {
+            <div class="alert alert-@AlertType alert-dismissible fade show" role="alert">
+                <strong>@(AlertType == "danger" ? "Error!" : "Success!")</strong> @AlertMessage
+                <button type="button" class="btn-close" @onclick="CloseAlert" aria-label="Close"></button>
+            </div>
+        }
 
+        @if (customer == null)
+        {
+            <div class="text-center py-5">
+                <p>Loading...</p>
+            </div>
+        }
+        else
+        {
+            <EditForm Model="@customer" OnValidSubmit="HandleValidSubmit">
                 <DataAnnotationsValidator />
+                <ValidationSummary class="alert alert-danger" />
 
-                <!-- CODE -->
-                <div class="mb-3 lms-form">
-                    <label>Customer Code</label>
-                    <InputText class="form-control"
-                               @bind-Value="customer.CustomerCode" />
+                <div class="row g-3">
+
+                    <!-- Customer Code (read-only) -->
+                    <div class="col-12 col-md-4">
+                        <label>Customer Code</label>
+                        <InputText class="form-control" @bind-Value="customer.CustomerCode" disabled />
+                        <small class="text-muted">Auto‑generated, cannot be changed</small>
+                    </div>
+
+                    <!-- Name (Required) -->
+                    <div class="col-12 col-md-4">
+                        <label>Name <span class="text-danger">*</span></label>
+                        <InputText class="form-control" @bind-Value="customer.Name" />
+                        <ValidationMessage For="@(() => customer.Name)" />
+                    </div>
+
+                    <!-- Phone Number (Required) -->
+                    <div class="col-12 col-md-4">
+                        <label>Phone Number <span class="text-danger">*</span> (10 digits)</label>
+                        <InputText class="form-control" @bind-Value="customer.PhoneNumber" />
+                        <ValidationMessage For="@(() => customer.PhoneNumber)" />
+                    </div>
+
+                    <!-- Email (Optional) -->
+                    <div class="col-12 col-md-6">
+                        <label>Email</label>
+                        <InputText class="form-control" @bind-Value="customer.Email" />
+                        <ValidationMessage For="@(() => customer.Email)" />
+                    </div>
+
+                    <!-- Address (Optional) -->
+                    <div class="col-12 col-md-6">
+                        <label>Address</label>
+                        <InputText class="form-control" @bind-Value="customer.Address" />
+                    </div>
+
+                    <!-- Is Active (Optional) -->
+                    <div class="col-12 col-md-4 d-flex align-items-center">
+                        <div class="form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="customer.IsActive" />
+                            <label class="form-check-label">Active</label>
+                        </div>
+                    </div>
+
                 </div>
 
-                <!-- NAME -->
-                <div class="mb-3 lms-form">
-                    <label>Name</label>
-                    <InputText class="form-control"
-                               @bind-Value="customer.Name" />
-                </div>
-
-                <!-- PHONE -->
-                <div class="mb-3 lms-form">
-                    <label>Phone Number</label>
-                    <InputText class="form-control"
-                               @bind-Value="customer.PhoneNumber" />
-                </div>
-
-                <!-- EMAIL -->
-                <div class="mb-3 lms-form">
-                    <label>Email</label>
-                    <InputText class="form-control"
-                               @bind-Value="customer.Email" />
-                </div>
-
-                <!-- ADDRESS -->
-                <div class="mb-3 lms-form">
-                    <label>Address</label>
-                    <InputText class="form-control"
-                               @bind-Value="customer.Address" />
-                </div>
-
-                <!-- ACTIVE -->
-                <div class="form-check mb-3">
-                    <InputCheckbox class="form-check-input"
-                                   @bind-Value="customer.IsActive" />
-                    <label class="form-check-label">
-                        Active
-                    </label>
-                </div>
-
-                <!-- BUTTONS -->
-                <div class="d-flex gap-2">
-
-                    <button type="submit" class="btn btn-lms-primary">
-                        Update
+                <div class="d-flex flex-wrap gap-2 mt-4">
+                    <button type="submit" class="btn btn-add" disabled="@IsProcessing">
+                        @if (IsProcessing)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                        }
+                        <i class="bi bi-save"></i> @(IsProcessing ? "Updating..." : "Update Customer")
                     </button>
-
-                    <a class="btn btn-secondary" href="/customers">
-                        Cancel
-                    </a>
-
+                    <button type="button" class="btn btn-secondary" @onclick="Cancel" disabled="@IsProcessing">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
                 </div>
 
             </EditForm>
+        }
 
-        </div>
-    }
+    </div>
 
 </div>
 
 @code {
-
-    [Parameter]
-    public int Id { get; set; }
+    [Parameter] public int Id { get; set; }
 
     private Customer? customer;
+
+    // ===== Alert Properties =====
+    private bool ShowAlert = false;
+    private string AlertMessage = string.Empty;
+    private string AlertType = "success";
+    private bool IsProcessing = false;
+    private CancellationTokenSource? _alertCts;
 
     protected override async Task OnInitializedAsync()
     {
         customer = await CustomerService.GetById(Id);
     }
 
-    private async Task Update()
+    private async Task HandleValidSubmit()
     {
-        await CustomerService.Update(customer!);
-        Navigation.NavigateTo("/customers");
+        IsProcessing = true;
+        StateHasChanged();
+
+        try
+        {
+            await CustomerService.Update(customer!);
+
+            AlertMessage = $"Customer '{customer!.Name}' updated successfully!";
+            AlertType = "success";
+            ShowAlert = true;
+            StateHasChanged();
+
+            await Task.Delay(1000);
+            Nav.NavigateTo("/customers");
+        }
+        catch (Exception ex)
+        {
+            AlertMessage = $"Error: {ex.Message}";
+            AlertType = "danger";
+            ShowAlert = true;
+            StateHasChanged();
+        }
+        finally
+        {
+            IsProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseAlert()
+    {
+        _alertCts?.Cancel();
+        ShowAlert = false;
+        AlertMessage = string.Empty;
+    }
+
+    private void Cancel()
+    {
+        Nav.NavigateTo("/customers");
     }
 }

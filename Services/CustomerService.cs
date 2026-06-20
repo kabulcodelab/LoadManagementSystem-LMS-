@@ -27,6 +27,10 @@ public class CustomerService
 
     public async Task Add(Customer customer)
     {
+        // Auto-generate CustomerCode if empty
+        if (string.IsNullOrWhiteSpace(customer.CustomerCode))
+            customer.CustomerCode = $"CUS-{DateTime.Now:yyyyMMddHHmmss}";
+
         _context.Customers.Add(customer);
         await _context.SaveChangesAsync();
     }
@@ -40,7 +44,6 @@ public class CustomerService
     public async Task Delete(int id)
     {
         var customer = await _context.Customers.FindAsync(id);
-
         if (customer != null)
         {
             _context.Customers.Remove(customer);
@@ -57,6 +60,7 @@ public class CustomerService
             .OrderByDescending(x => x.CreatedDate)
             .ToListAsync();
     }
+
     public async Task<List<Customer>> GetFiltered(string? search)
     {
         var query = _context.Customers.AsQueryable();
@@ -74,5 +78,39 @@ public class CustomerService
         return await query
             .OrderBy(c => c.Name)
             .ToListAsync();
+    }
+
+    // ================================================
+    // GET PAGED (for list page with pagination)
+    // ================================================
+    public async Task<PagedResult<Customer>> GetPaged(int page, int pageSize, string? search = null)
+    {
+        var query = _context.Customers.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(c =>
+                c.CustomerCode.Contains(search) ||
+                c.Name.Contains(search) ||
+                c.PhoneNumber.Contains(search) ||
+                c.Email.Contains(search)
+            );
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .OrderBy(c => c.Name)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<Customer>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageSize = pageSize,
+            CurrentPage = page
+        };
     }
 }

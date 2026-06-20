@@ -4,6 +4,7 @@
 @using LoadManagementSystem_LMS_.Models
 @using LoadManagementSystem_LMS_.Services
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components
 
 @inject CustomerService CustomerService
 @inject NavigationManager Nav
@@ -16,6 +17,15 @@
         <div class="page-title">Customer Details</div>
         <div class="page-subtitle text-muted">Profile & load history</div>
     </div>
+
+    <!-- ====== ALERT ====== -->
+    @if (ShowAlert)
+    {
+        <div class="alert alert-@AlertType alert-dismissible fade show" role="alert">
+            <strong>@(AlertType == "danger" ? "Error!" : "Success!")</strong> @AlertMessage
+            <button type="button" class="btn-close" @onclick="CloseAlert" aria-label="Close"></button>
+        </div>
+    }
 
     @if (customer == null)
     {
@@ -52,7 +62,7 @@
                 <div class="col-md-6">
                     <div class="d-flex justify-content-between py-1">
                         <strong>Status:</strong>
-                        <span class="badge @(customer.IsActive ? "bg-success" : "bg-danger")">
+                        <span class="badge @(customer.IsActive ? "bg-success" : "bg-secondary")">
                             @(customer.IsActive ? "Active" : "Inactive")
                         </span>
                     </div>
@@ -144,15 +154,32 @@
     [Parameter]
     public int Id { get; set; }
 
+    [Parameter]
+    public string? Message { get; set; }
+
     private Customer? customer;
     private List<Load>? loads;
     private decimal? totalRevenue;
+
+    // ===== Alert =====
+    private bool ShowAlert = false;
+    private string AlertMessage = string.Empty;
+    private string AlertType = "success";
+    private CancellationTokenSource? _alertCts;
 
     protected override async Task OnInitializedAsync()
     {
         customer = await CustomerService.GetById(Id);
         loads = await CustomerService.GetCustomerLoads(Id);
         totalRevenue = loads?.Sum(x => x.Amount ?? 0);
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (!string.IsNullOrEmpty(Message))
+        {
+            ShowAlertMessage(Message);
+        }
     }
 
     private void GoBack()
@@ -172,5 +199,39 @@
             LoadStatus.Cancelled => "bg-danger",
             _ => "bg-dark"
         };
+    }
+
+    // ===== Alert Helpers =====
+    private void ShowAlertMessage(string message, bool isError = false)
+    {
+        _alertCts?.Cancel();
+        _alertCts = new CancellationTokenSource();
+
+        AlertMessage = message;
+        ShowAlert = true;
+        AlertType = isError ? "danger" : "success";
+        StateHasChanged();
+
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(3000, _alertCts.Token);
+            if (!_alertCts.Token.IsCancellationRequested)
+            {
+                await InvokeAsync(() =>
+                {
+                    ShowAlert = false;
+                    AlertMessage = string.Empty;
+                    StateHasChanged();
+                });
+            }
+        });
+    }
+
+    private void CloseAlert()
+    {
+        _alertCts?.Cancel();
+        ShowAlert = false;
+        AlertMessage = string.Empty;
+        StateHasChanged();
     }
 }
