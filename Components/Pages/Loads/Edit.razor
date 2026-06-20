@@ -83,16 +83,16 @@
                 <div class="lms-card">
                     <div class="row g-3">
 
-                        <!-- Load Number (read-only) -->
+                        <!-- Load Number -->
                         <div class="col-12 col-md-4">
                             <label>Load Number</label>
-                            <InputText class="form-control" @bind-Value="load.LoadNumber" disabled />
-                            <small class="text-muted">Auto‑generated, cannot be changed</small>
+                            <InputText class="form-control" @bind-Value="load.LoadNumber" />
+                            <small class="text-muted">Leave empty to keep current number</small>
                         </div>
 
                         <!-- Tracking Number -->
                         <div class="col-12 col-md-4">
-                            <label>Tracking Number</label>
+                            <label>Po Number</label>
                             <InputText class="form-control" @bind-Value="load.TrackingNumber" />
                         </div>
 

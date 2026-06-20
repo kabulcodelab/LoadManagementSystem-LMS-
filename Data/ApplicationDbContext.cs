@@ -99,7 +99,7 @@ namespace LoadManagementSystem_LMS_.Data
             // ================================================
             modelBuilder.Entity<Load>()
                 .Property(l => l.Type)
-                .HasDefaultValue(LoadType.RTS);
+                .HasDefaultValue(LoadType.PO);
 
             modelBuilder.Entity<Load>()
                 .Property(l => l.Status)

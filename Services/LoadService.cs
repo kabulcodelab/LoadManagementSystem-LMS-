@@ -111,6 +111,7 @@ public class LoadService
     // ================================================
     public async Task Add(Load load)
     {
+        
         if (string.IsNullOrWhiteSpace(load.LoadNumber))
         {
             var lastLoad = await _context.Loads
@@ -129,7 +130,18 @@ public class LoadService
             }
             load.LoadNumber = $"LON-{nextNumber:D3}";
         }
+        else
+        {
+            var exists = await _context.Loads
+                .AnyAsync(l => l.LoadNumber == load.LoadNumber);
 
+            if (exists)
+                throw new InvalidOperationException($"Load number '{load.LoadNumber}' already exists. Please use a unique number.");
+        }
+
+        // ================================================
+        // 2.  Stops
+        // ================================================
         int seq = 1;
         foreach (var stop in load.Stops)
         {
@@ -138,8 +150,14 @@ public class LoadService
             stop.LoadId = 0;
         }
 
+        // ================================================
+        // 3. date
+        // ================================================
         load.CreatedDate = DateTime.Now;
 
+        // ================================================
+        // 4. save to the database
+        // ================================================
         _context.Loads.Add(load);
         await _context.SaveChangesAsync();
     }

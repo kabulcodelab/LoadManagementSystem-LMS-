@@ -6,7 +6,9 @@ namespace LoadManagementSystem_LMS_.Models
     {
         public int TotalLoads { get; set; }
         public int PendingLoads { get; set; }
+        public int InTransitLoads { get; set; }
         public int DeliveredLoads { get; set; }
+        public int CancelledLoads { get; set; }
         public decimal TotalRevenue { get; set; }
         public int Drivers { get; set; }
         public int Vehicles { get; set; }
@@ -22,5 +24,13 @@ namespace LoadManagementSystem_LMS_.Models
         public LoadStatus Status { get; set; }
         public decimal? Amount { get; set; }
         public DateTime CreatedDate { get; set; }
+    }
+
+    public class LoadStatusDistribution
+    {
+        public int Pending { get; set; }
+        public int InTransit { get; set; }
+        public int Delivered { get; set; }
+        public int Cancelled { get; set; }
     }
 }

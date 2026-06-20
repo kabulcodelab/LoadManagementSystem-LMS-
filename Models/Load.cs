@@ -29,7 +29,7 @@ namespace LoadManagementSystem_LMS_.Models
         public Vehicle? Vehicle { get; set; }
 
         // ========== Load Type & Status ==========
-        public LoadType Type { get; set; } = LoadType.RTS;
+        public LoadType Type { get; set; } = LoadType.PO;
         public LoadStatus Status { get; set; } = LoadStatus.Pending;
 
         // ========== Dates ==========
@@ -53,7 +53,7 @@ namespace LoadManagementSystem_LMS_.Models
 
     public enum LoadType
     {
-        RTS, LTL, FTL, Drayage, Intermodal
+        PO, VAN, Flatbed
     }
 
     public enum LoadStatus

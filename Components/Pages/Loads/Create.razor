@@ -75,16 +75,17 @@
             <div class="lms-card">
                 <div class="row g-3">
 
-                    <!-- Load Number (auto-generated, disabled) -->
+                    
+                    <!-- Load Number -->
                     <div class="col-12 col-md-4">
                         <label>Load Number</label>
-                        <InputText class="form-control" @bind-Value="load.LoadNumber" disabled />
-                        <small class="text-muted">Auto‑generated (LON-XXX)</small>
+                        <InputText class="form-control" @bind-Value="load.LoadNumber" />
+                        <small class="text-muted">Leave empty to auto‑generate</small>
                     </div>
 
                     <!-- Tracking Number -->
                     <div class="col-12 col-md-4">
-                        <label>Tracking Number</label>
+                        <label>Po number</label>
                         <InputText class="form-control" @bind-Value="load.TrackingNumber" />
                     </div>
 
@@ -490,7 +491,7 @@
         // Set default values
         load.PickupDate = DateTime.Today;
         load.Status = LoadStatus.Pending;
-        load.Type = LoadType.RTS;
+        load.Type = LoadType.PO;
 
         // Add a default stop
         load.Stops.Add(new Stop { Type = StopType.Pickup });
