@@ -7,7 +7,6 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.JSInterop
 @using System.IO
-@using MudBlazor
 
 @inject LoadService LoadService
 @inject CustomerService CustomerService
@@ -15,7 +14,6 @@
 @inject VehicleService VehicleService
 @inject NavigationManager Nav
 @inject IJSRuntime JSRuntime
-@inject IDialogService DialogService
 
 <div class="container-fluid px-3 px-md-4 py-3">
 
@@ -188,7 +186,7 @@
         </div>
 
         <!-- ============================================= -->
-        <!-- TAB 2: STOPS                                  -->
+        <!-- TAB 2: STOPS (Safe deletion by object)       -->
         <!-- ============================================= -->
         <div class="tab-pane @(activeTab == "stops" ? "show active" : "")">
             <div class="lms-card">
@@ -235,38 +233,16 @@
                                     <InputText class="form-control" @bind-Value="stop.Company" placeholder="Company name" />
                                 </div>
 
-                                <!-- Initial Date/Time (MudDateTimePicker) -->
+                                <!-- Initial Date/Time -->
                                 <div class="col-12 col-md-3">
                                     <label>Initial Date/Time</label>
-                                    <MudDateTimePicker Date="@stop.InitialDateTime"
-                                                       DateChanged="@((DateTime? value) => stop.InitialDateTime = value)"
-                                                       Label="Select Date & Time"
-                                                       Variant="Variant.Outlined"
-                                                       Format="MM-dd-yyyy hh:mm tt"
-                                                       DateFormat="MM-dd-yyyy"
-                                                       TimeFormat="hh:mm tt"
-                                                       TimePickerVariant="TimePickerVariant.Static"
-                                                       Culture="@(new System.Globalization.CultureInfo("en-US"))"
-                                                       FullWidth="true"
-                                                       Margin="Margin.Dense"
-                                                       Clearable="true" />
+                                    <InputDate class="form-control" @bind-Value="stop.InitialDateTime" />
                                 </div>
 
-                                <!-- Final Date/Time (MudDateTimePicker) -->
+                                <!-- Final Date/Time -->
                                 <div class="col-12 col-md-3">
                                     <label>Final Date/Time</label>
-                                    <MudDateTimePicker Date="@stop.FinalDateTime"
-                                                       DateChanged="@((DateTime? value) => stop.FinalDateTime = value)"
-                                                       Label="Select Date & Time"
-                                                       Variant="Variant.Outlined"
-                                                       Format="MM-dd-yyyy hh:mm tt"
-                                                       DateFormat="MM-dd-yyyy"
-                                                       TimeFormat="hh:mm tt"
-                                                       TimePickerVariant="TimePickerVariant.Static"
-                                                       Culture="@(new System.Globalization.CultureInfo("en-US"))"
-                                                       FullWidth="true"
-                                                       Margin="Margin.Dense"
-                                                       Clearable="true" />
+                                    <InputDate class="form-control" @bind-Value="stop.FinalDateTime" />
                                 </div>
 
                                 <!-- Address -->
@@ -276,13 +252,16 @@
                                 </div>
 
                                 <!-- City -->
-                                <div class="col-12 col-md-3">
+                                <div class="col-12 col-md-2">
                                     <label>City</label>
                                     <InputText class="form-control" @bind-Value="stop.City" placeholder="City" />
                                 </div>
 
-                                <!-- State (Dropdown with US States) -->
+                                <!-- ========================================== -->
+                                <!-- State (Dropdown with US States)           -->
+                                <!-- ========================================== -->
                                 <div class="col-12 col-md-3">
+                                    <!-- changed to col-md-3 to fit better -->
                                     <label>State</label>
                                     <InputSelect class="form-select" @bind-Value="stop.State">
                                         <option value="">Select State</option>
@@ -294,7 +273,7 @@
                                 </div>
 
                                 <!-- Zip Code -->
-                                <div class="col-12 col-md-3">
+                                <div class="col-12 col-md-2">
                                     <label>Zip Code</label>
                                     <InputText class="form-control" @bind-Value="stop.ZipCode" placeholder="Zip" />
                                 </div>
@@ -330,13 +309,15 @@
         </div>
 
         <!-- ============================================= -->
-        <!-- TAB 3: FILES                                 -->
+        <!-- TAB 3: FILES (With document type selection)  -->
         <!-- ============================================= -->
         <div class="tab-pane @(activeTab == "files" ? "show active" : "")">
             <div class="lms-card">
                 <h5 class="mb-3">Upload Documents</h5>
 
-                <!-- Rate Confirmation -->
+                <!-- ========================================== -->
+                <!-- 1. Rate Confirmation                       -->
+                <!-- ========================================== -->
                 <div class="border rounded p-3 mb-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <h6 class="mb-0">Rate Confirmation</h6>
@@ -346,7 +327,9 @@
                     </div>
                 </div>
 
-                <!-- Bill of Lading -->
+                <!-- ========================================== -->
+                <!-- 2. Bill of Lading                          -->
+                <!-- ========================================== -->
                 <div class="border rounded p-3 mb-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <h6 class="mb-0">Bill of Lading</h6>
@@ -356,7 +339,9 @@
                     </div>
                 </div>
 
-                <!-- Other -->
+                <!-- ========================================== -->
+                <!-- 3. Other                                   -->
+                <!-- ========================================== -->
                 <div class="border rounded p-3 mb-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <h6 class="mb-0">Other</h6>
@@ -366,7 +351,9 @@
                     </div>
                 </div>
 
-                <!-- Uploaded Files Table -->
+                <!-- ========================================== -->
+                <!-- Uploaded Files Table                       -->
+                <!-- ========================================== -->
                 @if (load.Documents.Count > 0)
                 {
                     <div class="table-responsive mt-3">
@@ -485,15 +472,15 @@
     private string AlertType = "success";
     private CancellationTokenSource? _alertCts;
 
-    // ===== List of all US States (2‑letter codes) =====
+    // ===== List of US States (full names) =====
     private List<string> UsStates = new List<string>
-{
-    "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia",
-    "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland",
-    "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey",
-    "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina",
-    "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"
-};
+    {
+        "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia",
+        "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland",
+        "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey",
+        "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina",
+        "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"
+    };
 
     // ===== Lifecycle =====
     protected override async Task OnInitializedAsync()
@@ -649,6 +636,7 @@
         try
         {
             await LoadService.Add(load);
+            // Success
             ShowAlertMessage($"Load '{load.LoadNumber}' created successfully!", isError: false);
             await Task.Delay(1000);
             Nav.NavigateTo("/loads");

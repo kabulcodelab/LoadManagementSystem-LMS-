@@ -149,12 +149,16 @@ public class LoadService
     // ================================================
     public async Task Update(Load load)
     {
+        // Update sequence for Stops
         int seq = 1;
         foreach (var stop in load.Stops)
         {
             stop.Sequence = seq++;
             stop.UpdatedAt = DateTime.UtcNow;
         }
+
+        // ✅ Set UpdatedAt for the Load itself
+        load.UpdatedAt = DateTime.UtcNow;   // یا DateTime.Now بسته به نیاز
 
         _context.Loads.Update(load);
         await _context.SaveChangesAsync();

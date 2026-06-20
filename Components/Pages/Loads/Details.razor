@@ -146,8 +146,9 @@
                             </small>
                         </div>
                         <div class="col-md-6">
+                            <!-- ✅ FIXED: Convert UTC to local time -->
                             <small class="text-muted">
-                                <strong>Last Updated:</strong> @(load.UpdatedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")
+                                <strong>Last Updated:</strong> @(load.UpdatedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "-")
                             </small>
                         </div>
                     </div>
@@ -268,10 +269,7 @@
                                             <button class="btn btn-sm btn-outline-success" @onclick='() => DownloadFile(doc.Id)' title="Download">
                                                 <i class="bi bi-download"></i>
                                             </button>
-                                            <!-- Delete Button -->
-                                            <button class="btn btn-sm btn-outline-danger" @onclick='() => DeleteFile(doc.Id, doc.FileName)' title="Delete">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                           
                                         </div>
                                     </td>
                                 </tr>
@@ -413,23 +411,6 @@
         }
     }
 
-    // ===== Delete File =====
-    private async Task DeleteFile(int docId, string fileName)
-    {
-        try
-        {
-            await DocumentService.Delete(docId);
-            if (load != null)
-            {
-                documents = await DocumentService.GetByLoad(Id);
-            }
-            ShowAlertMessage($"File '{fileName}' deleted successfully.", isError: false);
-        }
-        catch (Exception ex)
-        {
-            ShowAlertMessage($"Error deleting file: {ex.Message}", isError: true);
-        }
-    }
 
     // ===== Helper: Get MIME type from file name =====
     private string GetMimeType(string fileName)
