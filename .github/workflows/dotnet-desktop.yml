@@ -153,6 +153,8 @@ jobs:
           server-dir: ./
           exclude: |
             **/app_offline.htm
+            **/appsettings.json
+            **/appsettings.Development.json
 
       - name: Remove app_offline.htm from Server
         if: always()
