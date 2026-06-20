@@ -136,6 +136,9 @@ jobs:
           port: 21
           local-dir: ./offline/
           server-dir: ./
+          dangerous-clean-slate: false
+          exclude: |
+            **/.ftp-deploy-sync-state.json
 
       - name: Wait for IIS Shutdown
         shell: powershell
@@ -151,6 +154,7 @@ jobs:
           port: 21
           local-dir: ./publish/
           server-dir: ./
+          dangerous-clean-slate: false
           exclude: |
             **/app_offline.htm
             **/appsettings.json
