@@ -5,9 +5,11 @@
 @using LoadManagementSystem_LMS_.Services
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components
+@using Microsoft.JSInterop
 
 @inject DocumentService DocumentService
 @inject NavigationManager Nav
+@inject IJSRuntime JSRuntime
 
 <div class="container-fluid px-3 px-md-4 py-3">
 
@@ -81,7 +83,7 @@
                         <th>Type</th>
                         <th>Load #</th>
                         <th>Size</th>
-                        <th>Uploaded By</th>
+                       
                         <th>Uploaded At</th>
                         <th class="text-center">Actions</th>
                     </tr>
@@ -115,28 +117,23 @@
                                     </a>
                                 </td>
                                 <td>@(doc.FileSize?.ToString("N0") ?? "-") bytes</td>
-                                <td>@(doc.UploadedBy ?? "-")</td>
-                                <td>@doc.UploadedAt?.ToString("yyyy-MM-dd HH:mm")</td> <!-- ✅ اصلاح شده -->
+                                
+                                <td>@doc.UploadedAt?.ToString("yyyy-MM-dd HH:mm")</td>
                                 <td>
                                     <div class="d-flex gap-1 justify-content-center flex-nowrap">
-                                        <!-- Download -->
-                                        @if (!string.IsNullOrEmpty(doc.FilePath))
-                                        {
-                                            <a class="btn btn-sm btn-outline-success"
-                                               href="@doc.FilePath"
-                                               target="_blank"
-                                               title="Download">
-                                                <i class="bi bi-download"></i>
-                                            </a>
-                                        }
-                                        else
-                                        {
-                                            <button class="btn btn-sm btn-outline-secondary" disabled title="No file available">
-                                                <i class="bi bi-download"></i>
-                                            </button>
-                                        }
-
-                                        <!-- Delete -->
+                                        <!-- View Button -->
+                                        <button class="btn btn-sm btn-outline-primary"
+                                                @onclick="() => ViewFile(doc.Id)"
+                                                title="View">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <!-- Download Button -->
+                                        <button class="btn btn-sm btn-outline-success"
+                                                @onclick="() => DownloadFile(doc.Id)"
+                                                title="Download">
+                                            <i class="bi bi-download"></i>
+                                        </button>
+                                        <!-- Delete Button -->
                                         <button class="btn btn-sm btn-outline-danger"
                                                 @onclick="() => ConfirmDelete(doc.Id, doc.FileName)"
                                                 title="Delete">
@@ -211,6 +208,54 @@
     }
 
 </div>
+
+<!-- ============================================= -->
+<!-- JavaScript functions for View & Download      -->
+<!-- ============================================= -->
+<script>
+    // View file in new tab
+    window.viewBase64File = function (base64String, contentType, fileName) {
+        try {
+            const byteCharacters = atob(base64String);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: contentType });
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+        } catch (error) {
+            console.error('Error viewing file:', error);
+            alert('Could not open the file. Please try downloading it.');
+        }
+    };
+
+    // Download file directly
+    window.downloadBase64File = function (base64String, fileName) {
+        try {
+            const byteCharacters = atob(base64String);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray]);
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+        } catch (error) {
+            console.error('Error downloading file:', error);
+            alert('Could not download the file. Please try again.');
+        }
+    };
+</script>
 
 @code {
     // ===== Fields =====
@@ -290,6 +335,47 @@
         await LoadData();
     }
 
+    // ===== View File =====
+    private async Task ViewFile(int docId)
+    {
+        try
+        {
+            var doc = await DocumentService.GetDocumentWithContent(docId);
+            if (doc == null || doc.FileContent == null || doc.FileContent.Length == 0)
+            {
+                ShowAlertMessage("File content is empty or unavailable.", isError: true);
+                return;
+            }
+            var base64 = Convert.ToBase64String(doc.FileContent);
+            var mimeType = GetMimeType(doc.FileName);
+            await JSRuntime.InvokeVoidAsync("viewBase64File", base64, mimeType, doc.FileName);
+        }
+        catch (Exception ex)
+        {
+            ShowAlertMessage($"Error viewing file: {ex.Message}", isError: true);
+        }
+    }
+
+    // ===== Download File =====
+    private async Task DownloadFile(int docId)
+    {
+        try
+        {
+            var doc = await DocumentService.GetDocumentWithContent(docId);
+            if (doc == null || doc.FileContent == null || doc.FileContent.Length == 0)
+            {
+                ShowAlertMessage("File content is empty or unavailable.", isError: true);
+                return;
+            }
+            var base64 = Convert.ToBase64String(doc.FileContent);
+            await JSRuntime.InvokeVoidAsync("downloadBase64File", base64, doc.FileName);
+        }
+        catch (Exception ex)
+        {
+            ShowAlertMessage($"Error downloading file: {ex.Message}", isError: true);
+        }
+    }
+
     // ===== Delete =====
     private void ConfirmDelete(int id, string fileName)
     {
@@ -321,6 +407,35 @@
                 ShowAlertMessage($"Error: {ex.Message}", isError: true);
             }
         }
+    }
+
+    // ===== Helper: Get MIME type from file name =====
+    private string GetMimeType(string fileName)
+    {
+        var ext = Path.GetExtension(fileName)?.ToLowerInvariant();
+        return ext switch
+        {
+            ".pdf" => "application/pdf",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            ".bmp" => "image/bmp",
+            ".webp" => "image/webp",
+            ".doc" => "application/msword",
+            ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ".xls" => "application/vnd.ms-excel",
+            ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ".ppt" => "application/vnd.ms-powerpoint",
+            ".pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            ".txt" => "text/plain",
+            ".csv" => "text/csv",
+            ".zip" => "application/zip",
+            ".rar" => "application/x-rar-compressed",
+            ".7z" => "application/x-7z-compressed",
+            ".xml" => "application/xml",
+            ".json" => "application/json",
+            _ => "application/octet-stream"
+        };
     }
 
     // ===== Alert Helpers =====

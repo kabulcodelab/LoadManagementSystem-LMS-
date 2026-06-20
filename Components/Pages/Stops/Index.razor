@@ -87,7 +87,7 @@
                         <th>Pickup #</th>
                         <th>Initial Date</th>
                         <th>Final Date</th>
-                        <th class="text-center">Actions</th>
+                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -123,21 +123,12 @@
                                 <td>@stop.InitialDateTime?.ToString("yyyy-MM-dd HH:mm")</td>
                                 <td>@stop.FinalDateTime?.ToString("yyyy-MM-dd HH:mm")</td>
                                 <td>
-                                    <div class="d-flex gap-1 justify-content-center flex-nowrap">
-                                        <!-- View Load -->
-                                        <a class="btn btn-sm btn-outline-info"
-                                           href="/loads/details/@stop.LoadId"
-                                           title="View Load">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-
-                                        <!-- Delete -->
-                                        <button class="btn btn-sm btn-outline-danger"
-                                                @onclick="() => ConfirmDelete(stop.Id, stop.Sequence, stop.Load?.LoadNumber)"
-                                                title="Delete">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
+                                    <!-- View Load -->
+                                    <a class="btn btn-sm btn-outline-info"
+                                       href="/loads/details/@stop.LoadId"
+                                       title="View Load">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
                                 </td>
                             </tr>
                         }
@@ -180,31 +171,6 @@
             </div>
         }
     </div>
-
-    <!-- DELETE CONFIRMATION MODAL -->
-    @if (DeleteId.HasValue)
-    {
-        <div class="modal-backdrop fade show" style="display:block;"></div>
-        <div class="modal show d-block" tabindex="-1" role="dialog" style="display:block;">
-            <div class="modal-dialog modal-dialog-centered" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Confirm Delete</h5>
-                        <button type="button" class="btn-close" @onclick="CancelDelete"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Are you sure you want to delete <strong>Stop #@DeleteSequence</strong> from load <strong>@DeleteLoadNumber</strong>?</p>
-                        <p class="text-danger">This action cannot be undone.</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" @onclick="CancelDelete">Cancel</button>
-                        <button class="btn btn-danger" @onclick="ExecuteDelete">Yes, Delete</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
-
 </div>
 
 @code {
@@ -225,11 +191,6 @@
     private string AlertType = "success";
     private CancellationTokenSource? _alertCts;
 
-    // Delete
-    private int? DeleteId;
-    private int? DeleteSequence;
-    private string? DeleteLoadNumber;
-
     // ===== Lifecycle =====
     protected override async Task OnInitializedAsync()
     {
@@ -239,9 +200,6 @@
     // ===== Data Loading =====
     private async Task LoadData()
     {
-        // Since we need to filter by Load Number, we'll use the service method
-        // that gets stops with Load included, then filter in memory.
-        // For better performance, you could add a GetPaged method to StopService.
         var allStops = await StopService.GetStopsWithLoad();
 
         var query = allStops.AsQueryable();
@@ -307,41 +265,6 @@
         if (page < 1 || page > pagedResult?.TotalPages) return;
         currentPage = page;
         await LoadData();
-    }
-
-    // ===== Delete =====
-    private void ConfirmDelete(int id, int sequence, string? loadNumber)
-    {
-        DeleteId = id;
-        DeleteSequence = sequence;
-        DeleteLoadNumber = loadNumber ?? "Unknown";
-        StateHasChanged();
-    }
-
-    private void CancelDelete()
-    {
-        DeleteId = null;
-        DeleteSequence = null;
-        DeleteLoadNumber = null;
-        StateHasChanged();
-    }
-
-    private async Task ExecuteDelete()
-    {
-        if (DeleteId.HasValue)
-        {
-            try
-            {
-                await StopService.Delete(DeleteId.Value);
-                CancelDelete();
-                await LoadData();
-                ShowAlertMessage($"Stop #{DeleteSequence} deleted successfully.", isError: false);
-            }
-            catch (Exception ex)
-            {
-                ShowAlertMessage($"Error: {ex.Message}", isError: true);
-            }
-        }
     }
 
     // ===== Alert Helpers =====

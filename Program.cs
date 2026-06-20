@@ -1,10 +1,11 @@
-using LoadManagementSystem_LMS_.Services;
 using LoadManagementSystem_LMS_.Components;
 using LoadManagementSystem_LMS_.Components.Account;
 using LoadManagementSystem_LMS_.Data;
+using LoadManagementSystem_LMS_.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +20,7 @@ builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<LoadService>();
 builder.Services.AddScoped<DocumentService>();
 builder.Services.AddScoped<StopService>();
-
+builder.Services.AddMudServices();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
