@@ -221,7 +221,7 @@
         </div>
 
         <!-- ============================================= -->
-        <!-- SECTION 3: FILES (Optimized – metadata only) -->
+        <!-- SECTION 3: FILES (with Download button)      -->
         <!-- ============================================= -->
         <div class="lms-card mt-3">
             <h5 class="border-bottom pb-2 mb-3">
@@ -261,11 +261,15 @@
                                     <td>
                                         <div class="d-flex gap-1">
                                             <!-- View Button -->
-                                            <button class="btn btn-sm btn-outline-success" @onclick='() => ViewFile(doc.Id)'>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick='() => ViewFile(doc.Id)' title="View">
                                                 <i class="bi bi-eye"></i>
                                             </button>
+                                            <!-- Download Button -->
+                                            <button class="btn btn-sm btn-outline-success" @onclick='() => DownloadFile(doc.Id)' title="Download">
+                                                <i class="bi bi-download"></i>
+                                            </button>
                                             <!-- Delete Button -->
-                                            <button class="btn btn-sm btn-outline-danger" @onclick='() => DeleteFile(doc.Id, doc.FileName)'>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick='() => DeleteFile(doc.Id, doc.FileName)' title="Delete">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
@@ -293,9 +297,10 @@
 </div>
 
 <!-- ============================================= -->
-<!-- JavaScript function to view Base64 files      -->
+<!-- JavaScript functions for View & Download      -->
 <!-- ============================================= -->
 <script>
+    // View file in new tab
     window.viewBase64File = function (base64String, contentType, fileName) {
         try {
             const byteCharacters = atob(base64String);
@@ -311,6 +316,30 @@
         } catch (error) {
             console.error('Error viewing file:', error);
             alert('Could not open the file. Please try downloading it.');
+        }
+    };
+
+    // Download file directly
+    window.downloadBase64File = function (base64String, fileName) {
+        try {
+            const byteCharacters = atob(base64String);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray]);
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+        } catch (error) {
+            console.error('Error downloading file:', error);
+            alert('Could not download the file. Please try again.');
         }
     };
 </script>
@@ -330,10 +359,7 @@
     // ===== Lifecycle =====
     protected override async Task OnInitializedAsync()
     {
-        // 1. Load the load without Documents to avoid huge binary data
         load = await LoadService.GetById(Id);
-
-        // 2. Load document metadata separately (without FileContent)
         if (load != null)
         {
             documents = await DocumentService.GetByLoad(Id);
@@ -346,19 +372,17 @@
         Nav.NavigateTo("/loads");
     }
 
-    // ===== View File – fetch content on demand =====
+    // ===== View File =====
     private async Task ViewFile(int docId)
     {
         try
         {
-            // Get the full document with binary content
             var doc = await DocumentService.GetDocumentWithContent(docId);
             if (doc == null || doc.FileContent == null || doc.FileContent.Length == 0)
             {
                 ShowAlertMessage("File content is empty or unavailable.", isError: true);
                 return;
             }
-
             var base64 = Convert.ToBase64String(doc.FileContent);
             var mimeType = GetMimeType(doc.FileName);
             await JSRuntime.InvokeVoidAsync("viewBase64File", base64, mimeType, doc.FileName);
@@ -369,13 +393,32 @@
         }
     }
 
+    // ===== Download File =====
+    private async Task DownloadFile(int docId)
+    {
+        try
+        {
+            var doc = await DocumentService.GetDocumentWithContent(docId);
+            if (doc == null || doc.FileContent == null || doc.FileContent.Length == 0)
+            {
+                ShowAlertMessage("File content is empty or unavailable.", isError: true);
+                return;
+            }
+            var base64 = Convert.ToBase64String(doc.FileContent);
+            await JSRuntime.InvokeVoidAsync("downloadBase64File", base64, doc.FileName);
+        }
+        catch (Exception ex)
+        {
+            ShowAlertMessage($"Error downloading file: {ex.Message}", isError: true);
+        }
+    }
+
     // ===== Delete File =====
     private async Task DeleteFile(int docId, string fileName)
     {
         try
         {
             await DocumentService.Delete(docId);
-            // Refresh the document list
             if (load != null)
             {
                 documents = await DocumentService.GetByLoad(Id);
