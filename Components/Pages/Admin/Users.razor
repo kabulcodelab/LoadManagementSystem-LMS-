@@ -12,6 +12,7 @@
 @inject RoleManager<IdentityRole> RoleManager
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>User Management</PageTitle>
 
@@ -196,7 +197,15 @@
 
     private async Task LoadUsers()
     {
-        users = await UserManager.Users.OrderByDescending(u => u.CreatedDate).ToListAsync();
+        // Get current user's ID
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var currentUser = authState.User;
+        var currentUserId = UserManager.GetUserId(currentUser);
+
+        var allUsers = await UserManager.Users.OrderByDescending(u => u.CreatedDate).ToListAsync();
+
+        // Exclude the current admin from the list
+        users = allUsers.Where(u => u.Id != currentUserId).ToList();
     }
 
     // ===== Confirm Email =====
@@ -303,9 +312,7 @@
     private async Task CopyPasswordToClipboard()
     {
         await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", newPassword);
-        // Optionally show a brief success message (using alert or a tooltip)
         ShowAlertMessage("Password copied to clipboard!", isError: false);
-        // Reset the alert timer if needed
     }
 
     // ===== Generate Random Password =====
@@ -318,7 +325,6 @@
         {
             password[i] = validChars[random.Next(validChars.Length)];
         }
-        // Ensure at least one digit, one uppercase, one special
         return new string(password);
     }
 
@@ -328,8 +334,18 @@
         try
         {
             var user = await UserManager.FindByIdAsync(userId);
-            if (user != null && user.Email != "admin@example.com") // Prevent deleting admin
+            if (user != null)
             {
+                // Extra safety: prevent deleting the current admin
+                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                var currentUser = authState.User;
+                var currentUserId = UserManager.GetUserId(currentUser);
+                if (user.Id == currentUserId)
+                {
+                    ShowAlertMessage("You cannot delete your own admin account.", isError: true);
+                    return;
+                }
+
                 var result = await UserManager.DeleteAsync(user);
                 if (result.Succeeded)
                 {
@@ -343,7 +359,7 @@
             }
             else
             {
-                ShowAlertMessage("Cannot delete the admin user.", isError: true);
+                ShowAlertMessage("User not found.", isError: true);
             }
         }
         catch (Exception ex)
