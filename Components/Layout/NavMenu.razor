@@ -1,5 +1,6 @@
 ﻿@implements IDisposable
 @inject NavigationManager NavigationManager
+@using Microsoft.AspNetCore.Authorization
 
 <style>
     /* Sidebar base */
@@ -18,7 +19,6 @@
         color: #e8edf3 !important;
     }
 
-    /* Brand section */
     .verano-brand .brand-name {
         color: #f5d742 !important;
         font-weight: 700;
@@ -40,7 +40,6 @@
         opacity: 0.7;
     }
 
-    /* لوگو – افکت هاور با روشنایی بیشتر */
     .brand-logo {
         display: flex;
         align-items: center;
@@ -59,7 +58,6 @@
             display: block;
         }
 
-    /* Nav links */
     .verano-sidebar .nav-link {
         transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
         border-radius: 6px;
@@ -92,7 +90,6 @@
                 color: #ffe066 !important;
             }
 
-    /* Active link */
     .verano-sidebar .nav-pills .nav-link.active,
     .verano-sidebar .nav-pills .show > .nav-link {
         background-color: rgba(245, 215, 66, 0.2) !important;
@@ -105,7 +102,6 @@
             color: #ffe066 !important;
         }
 
-    /* Logout button */
     .verano-sidebar .logout-btn {
         background: transparent;
         border: none;
@@ -175,10 +171,9 @@
 
 <div class="verano-sidebar" dir="ltr">
 
-    <!-- ========== برند با لوگوی روشن‌تر ========== -->
+    <!-- Brand -->
     <div class="verano-brand mb-3 pb-2 border-bottom verano-divider">
         <div class="d-flex align-items-center px-2 py-2" style="cursor:default; gap: 12px;">
-
             <div class="brand-logo">
                 <svg width="52" height="52" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <rect x="2" y="2" width="52" height="52" rx="14" fill="#0b1a2e" stroke="#f5d742" stroke-width="3" />
@@ -189,19 +184,19 @@
                     <circle cx="44" cy="12" r="3" fill="#f5d742" opacity="0.7" />
                 </svg>
             </div>
-
             <div>
                 <div class="brand-name">LMS</div>
                 <div class="brand-sub">Load Management</div>
             </div>
-
         </div>
     </div>
 
-    <!-- منو (بدون تغییر) -->
+    <!-- Navigation -->
     <div class="nav-scroll">
         <nav class="nav nav-pills flex-column nav-gap">
-            <AuthorizeView>
+
+            <!-- Outer AuthorizeView – with a unique Context name -->
+            <AuthorizeView Context="auth">
                 <Authorized>
                     <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                         <i class="bi bi-house-door-fill"></i> Dashboard
@@ -224,10 +219,22 @@
                     <NavLink class="nav-link" href="/stops">
                         <i class="bi bi-geo-alt"></i> Stops
                     </NavLink>
+
                     <hr class="hr-gold" />
+
+                    <!-- Inner AuthorizeView – Admin only (uses default context) -->
+                    <AuthorizeView Roles="Admin">
+                        <Authorized>
+                            <NavLink class="nav-link" href="/admin/users">
+                                <i class="bi bi-people"></i> User Management
+                            </NavLink>
+                        </Authorized>
+                    </AuthorizeView>
+
                     <NavLink class="nav-link" href="Account/Manage">
                         <i class="bi bi-person-fill"></i> Settings
                     </NavLink>
+
                     <form action="Account/Logout" method="post" class="mt-1">
                         <AntiforgeryToken />
                         <input type="hidden" name="ReturnUrl" value="@currentUrl" />
@@ -236,6 +243,7 @@
                         </button>
                     </form>
                 </Authorized>
+
                 <NotAuthorized>
                     <NavLink class="nav-link" href="Account/Login">
                         <i class="bi bi-box-arrow-in-right"></i> Login
@@ -245,6 +253,7 @@
                     </NavLink>
                 </NotAuthorized>
             </AuthorizeView>
+
         </nav>
     </div>
 </div>

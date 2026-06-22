@@ -7,6 +7,7 @@
 @using LoadManagementSystem_LMS_.Models
 
 @inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
@@ -259,8 +260,34 @@
 
         if (result.Succeeded)
         {
-            Logger.LogInformation("User logged in.");
-            RedirectManager.RedirectTo(ReturnUrl);
+            // ✅ دریافت کاربر از دیتابیس
+            var user = await UserManager.FindByEmailAsync(Input.Email);
+            if (user != null)
+            {
+                // ✅ بررسی وضعیت کاربر
+                if (!user.IsActive)
+                {
+                    await SignInManager.SignOutAsync();
+                    errorMessage = "Your account is inactive. Please contact an administrator.";
+                    return;
+                }
+
+                if (!user.EmailConfirmed)
+                {
+                    await SignInManager.SignOutAsync();
+                    errorMessage = "Your email is not confirmed. Please contact an administrator.";
+                    return;
+                }
+
+                // ✅ کاربر فعال و تأیید شده است
+                Logger.LogInformation("User logged in.");
+                RedirectManager.RedirectTo(ReturnUrl);
+            }
+            else
+            {
+                // کاربر پیدا نشد (احتمالاً خطا)
+                errorMessage = "Invalid login attempt. Please check your email and password.";
+            }
         }
         else if (result.RequiresTwoFactor)
         {

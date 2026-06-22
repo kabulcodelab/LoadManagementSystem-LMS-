@@ -6,9 +6,11 @@
 @using LoadManagementSystem_LMS_.Data
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.EntityFrameworkCore
 @using LoadManagementSystem_LMS_.Models
 
 @inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
 @inject IUserStore<ApplicationUser> UserStore
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IEmailSender<ApplicationUser> EmailSender
@@ -261,13 +263,18 @@
 
     public async Task RegisterUser()
     {
-        // Create user with your ApplicationUser model
+        // ✅ بررسی تعداد کاربران موجود
+        var usersCount = await UserManager.Users.CountAsync();
+        var isFirstUser = usersCount == 0;
+
+        // ساخت کاربر جدید
         var user = new ApplicationUser
         {
             FullName = Input.FullName,
             UserName = Input.Email,
             Email = Input.Email,
-            IsActive = true,
+            EmailConfirmed = isFirstUser,   // ✅ اولین کاربر تأیید شده
+            IsActive = isFirstUser,         // ✅ اولین کاربر فعال
             CreatedDate = DateTime.Now
         };
 
@@ -277,12 +284,28 @@
         {
             Logger.LogInformation("User created a new account.");
 
-            // Optionally assign a default role (if you have roles later)
-            // await UserManager.AddToRoleAsync(user, "User");
+            if (isFirstUser)
+            {
+                // ✅ اولین کاربر: ایجاد نقش Admin و اختصاص به کاربر
+                if (!await RoleManager.RoleExistsAsync("Admin"))
+                    await RoleManager.CreateAsync(new IdentityRole("Admin"));
+
+                await UserManager.AddToRoleAsync(user, "Admin");
+                Logger.LogInformation("First user created as Admin.");
+            }
+            else
+            {
+                // ✅ کاربران بعدی به عنوان کاربر عادی
+                Logger.LogInformation($"User {user.Email} created as regular user.");
+            }
 
             successMessage = "Registration successful! You can now log in.";
-            Input = new InputModel(); // clear form
+            Input = new InputModel(); // پاک کردن فرم
             errorMessage = null;
+
+            // ✅ هدایت به صفحه Login پس از ۱ ثانیه
+            await Task.Delay(1000);
+            NavigationManager.NavigateTo("/Account/Login");
         }
         else
         {
