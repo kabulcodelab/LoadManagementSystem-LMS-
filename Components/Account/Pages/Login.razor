@@ -272,7 +272,9 @@
                 }
 
                 Logger.LogInformation("User logged in.");
-                RedirectManager.RedirectTo(ReturnUrl);
+
+                // ✅ Always redirect to Home page, ignore ReturnUrl
+                NavigationManager.NavigateTo("/", forceLoad: true);
             }
             else
             {

@@ -6,10 +6,12 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.JSInterop
 
 @inject UserManager<ApplicationUser> UserManager
 @inject RoleManager<IdentityRole> RoleManager
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 
 <PageTitle>User Management</PageTitle>
 
@@ -25,7 +27,7 @@
         </a>
     </div>
 
-    <!-- ===== AuthorizeView: فقط کاربران Admin محتوای صفحه را ببینند ===== -->
+    <!-- ===== AuthorizeView: Only Admin users see content ===== -->
     <AuthorizeView Roles="Admin">
         <Authorized>
             <!-- ALERT -->
@@ -47,7 +49,7 @@
                                 <th>Email</th>
                                 <th>Email Confirmed</th>
                                 <th>Is Active</th>
-                                <th class="text-center">Actions</th>
+                                <th class="text-center" style="min-width: 220px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -77,30 +79,47 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <div class="d-flex gap-1 justify-content-center flex-nowrap">
+                                            <div class="d-flex gap-1 justify-content-center flex-wrap">
                                                 <!-- Confirm Email -->
                                                 @if (!user.EmailConfirmed)
                                                 {
-                                                    <button class="btn btn-sm btn-outline-success" @onclick="() => ConfirmUser(user.Id)" title="Confirm Email">
-                                                        <i class="bi bi-check-circle"></i>
+                                                    <button class="btn btn-sm btn-outline-success"
+                                                            @onclick="() => ConfirmUser(user.Id)"
+                                                            title="Confirm Email (allow login)">
+                                                        <i class="bi bi-check-circle"></i> Confirm
                                                     </button>
                                                 }
+
                                                 <!-- Toggle Active Status -->
                                                 @if (user.IsActive)
                                                 {
-                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => ToggleUserStatus(user.Id, false)" title="Deactivate">
-                                                        <i class="bi bi-person-x"></i>
+                                                    <button class="btn btn-sm btn-outline-danger"
+                                                            @onclick="() => ToggleUserStatus(user.Id, false)"
+                                                            title="Deactivate user (block login)">
+                                                        <i class="bi bi-person-x"></i> Deactivate
                                                     </button>
                                                 }
                                                 else
                                                 {
-                                                    <button class="btn btn-sm btn-outline-success" @onclick="() => ToggleUserStatus(user.Id, true)" title="Activate">
-                                                        <i class="bi bi-person-check"></i>
+                                                    <button class="btn btn-sm btn-outline-success"
+                                                            @onclick="() => ToggleUserStatus(user.Id, true)"
+                                                            title="Activate user (allow login)">
+                                                        <i class="bi bi-person-check"></i> Activate
                                                     </button>
                                                 }
-                                                <!-- Delete User (Optional) -->
-                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUser(user.Id)" title="Delete">
-                                                    <i class="bi bi-trash"></i>
+
+                                                <!-- Reset Password -->
+                                                <button class="btn btn-sm btn-outline-warning"
+                                                        @onclick="() => ResetPassword(user.Id, user.Email)"
+                                                        title="Reset password and show new password">
+                                                    <i class="bi bi-key"></i> Reset Password
+                                                </button>
+
+                                                <!-- Delete User -->
+                                                <button class="btn btn-sm btn-outline-danger"
+                                                        @onclick="() => DeleteUser(user.Id)"
+                                                        title="Permanently delete user">
+                                                    <i class="bi bi-trash"></i> Delete
                                                 </button>
                                             </div>
                                         </td>
@@ -128,6 +147,34 @@
 
 </div>
 
+<!-- ===== RESET PASSWORD MODAL ===== -->
+<div class="modal fade @(showResetPasswordModal ? "show d-block" : "")" tabindex="-1" role="dialog" style="@(showResetPasswordModal ? "display:block; background-color: rgba(0,0,0,0.5);" : "")">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Password Reset for @(resetUserEmail)</h5>
+                <button type="button" class="btn-close" @onclick="CloseResetPasswordModal"></button>
+            </div>
+            <div class="modal-body">
+                <p>The password for <strong>@resetUserEmail</strong> has been reset.</p>
+                <div class="alert alert-warning">
+                    <strong>New password:</strong>
+                    <code style="font-size: 1.2rem;">@newPassword</code>
+                </div>
+                <p class="text-muted small">Please share this password with the user. They should change it after logging in.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-secondary" @onclick="CopyPasswordToClipboard">
+                    <i class="bi bi-clipboard"></i> Copy Password
+                </button>
+                <button class="btn btn-primary" @onclick="CloseResetPasswordModal">
+                    <i class="bi bi-check"></i> Done
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @code {
     private List<ApplicationUser>? users;
 
@@ -136,6 +183,11 @@
     private string AlertMessage = string.Empty;
     private string AlertType = "success";
     private CancellationTokenSource? _alertCts;
+
+    // Reset Password Modal
+    private bool showResetPasswordModal = false;
+    private string resetUserEmail = string.Empty;
+    private string newPassword = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -201,7 +253,76 @@
         }
     }
 
-    // ===== Delete User (Optional) =====
+    // ===== Reset Password =====
+    private async Task ResetPassword(string userId, string email)
+    {
+        try
+        {
+            var user = await UserManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                ShowAlertMessage("User not found.", isError: true);
+                return;
+            }
+
+            // Generate a random password
+            var generatedPassword = GenerateRandomPassword();
+
+            // Reset the password
+            var resetToken = await UserManager.GeneratePasswordResetTokenAsync(user);
+            var result = await UserManager.ResetPasswordAsync(user, resetToken, generatedPassword);
+
+            if (result.Succeeded)
+            {
+                // Store data for modal
+                resetUserEmail = email;
+                newPassword = generatedPassword;
+                showResetPasswordModal = true;
+                StateHasChanged();
+                await LoadUsers(); // refresh table
+            }
+            else
+            {
+                ShowAlertMessage($"Error resetting password: {string.Join(", ", result.Errors.Select(e => e.Description))}", isError: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowAlertMessage($"Error: {ex.Message}", isError: true);
+        }
+    }
+
+    private void CloseResetPasswordModal()
+    {
+        showResetPasswordModal = false;
+        resetUserEmail = string.Empty;
+        newPassword = string.Empty;
+        StateHasChanged();
+    }
+
+    private async Task CopyPasswordToClipboard()
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", newPassword);
+        // Optionally show a brief success message (using alert or a tooltip)
+        ShowAlertMessage("Password copied to clipboard!", isError: false);
+        // Reset the alert timer if needed
+    }
+
+    // ===== Generate Random Password =====
+    private string GenerateRandomPassword(int length = 12)
+    {
+        const string validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()";
+        var random = new Random();
+        var password = new char[length];
+        for (int i = 0; i < length; i++)
+        {
+            password[i] = validChars[random.Next(validChars.Length)];
+        }
+        // Ensure at least one digit, one uppercase, one special
+        return new string(password);
+    }
+
+    // ===== Delete User =====
     private async Task DeleteUser(string userId)
     {
         try
