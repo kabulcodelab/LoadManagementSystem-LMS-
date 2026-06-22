@@ -14,10 +14,10 @@ public class Driver
     public string FullName { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "National Code is required")]
-    public string NationalCode { get; set; } = string.Empty;  
+    public string NationalCode { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Primary Phone is required")]
-    [RegularExpression(@"^[0-9]{11}$", ErrorMessage = "Phone Number must be exactly 11 digits (including US country code: 1 + 10 digits)")]
+    [RegularExpression(@"^\+1[0-9]{10}$",
+    ErrorMessage = "Phone Number must be in format +1XXXXXXXXXX")]
     public string PhoneNumber { get; set; } = string.Empty;
 
     // Optional fields

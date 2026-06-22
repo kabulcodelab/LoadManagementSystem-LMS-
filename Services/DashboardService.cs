@@ -24,7 +24,11 @@ public class DashboardService
         var inTransitLoads = await query.CountAsync(x => x.Status == LoadStatus.InTransit);
         var deliveredLoads = await query.CountAsync(x => x.Status == LoadStatus.Delivered);
         var cancelledLoads = await query.CountAsync(x => x.Status == LoadStatus.Cancelled);
-        var totalRevenue = await query.Where(x => x.Status == LoadStatus.Delivered).SumAsync(x => x.Amount ?? 0);
+
+        // ✅ فقط مبلغ بارهایی که پرداخت شده‌اند (صرف‌نظر از وضعیت تحویل)
+        var totalRevenue = await query
+            .Where(x => x.IsPaid == true)
+            .SumAsync(x => x.Amount ?? 0);
 
         var drivers = await _context.Drivers.CountAsync();
         var vehicles = await _context.Vehicles.CountAsync();
@@ -79,9 +83,9 @@ public class DashboardService
     {
         var startDate = DateTime.Today.AddDays(-days + 1);
 
-        // ✅ استفاده از CreatedDate به‌جای DeliveryDate
+        // ✅ فقط مبلغ بارهایی که پرداخت شده‌اند (صرف‌نظر از وضعیت تحویل)
         var dailyRevenue = await _context.Loads
-            .Where(x => x.Status == LoadStatus.Delivered && x.CreatedDate >= startDate)
+            .Where(x => x.IsPaid == true && x.CreatedDate >= startDate)
             .GroupBy(x => x.CreatedDate.Date)
             .Select(g => new { Date = g.Key, Total = g.Sum(x => x.Amount ?? 0) })
             .ToDictionaryAsync(x => x.Date, x => x.Total);

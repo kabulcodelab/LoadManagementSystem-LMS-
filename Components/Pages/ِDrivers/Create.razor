@@ -53,18 +53,22 @@
                     <ValidationMessage For="@(() => driver.NationalCode)" />
                 </div>
 
-                <!-- Phone Number (Required, 11 digits including country code) -->
-                <div class="col-12 col-md-6">
-                    <label>Primary Phone  (11 digits including US country code: 1 + 10 digits) <span class="text-danger">*</span></label>
-                    <InputText class="form-control" @bind-Value="driver.PhoneNumber" />
+                <!-- Phone Number (Required) -->
+                <div class="col-12 col-md-4">
+                    <label>Phone Number <span class="text-danger">*</span> (+1XXXXXXXXXX)</label>
+                    <InputText class="form-control"
+                               @bind-Value="driver.PhoneNumber"
+                               maxlength="12" />
                     <ValidationMessage For="@(() => driver.PhoneNumber)" />
                 </div>
 
                 <!-- Alternate Phone (Optional, 11 digits if entered) -->
                 <div class="col-12 col-md-6">
-                    <label>Alternate Phone (11 digits including US country code)</label>
-                    <InputText class="form-control" @bind-Value="driver.AlternatePhoneNumber" />
-                    <ValidationMessage For="@(() => driver.AlternatePhoneNumber)" />
+                    <label>Alternate Phone Number(+1XXXXXXXXXX)</label>
+                    <InputText class="form-control"
+                               @bind-Value="driver.PhoneNumber"
+                               maxlength="12" />
+                    <ValidationMessage For="@(() => driver.PhoneNumber)" />
                 </div>
 
                 <!-- Birth Date (Optional) -->

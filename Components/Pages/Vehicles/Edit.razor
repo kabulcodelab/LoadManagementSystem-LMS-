@@ -210,12 +210,12 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <small class="text-muted">
-                                    <strong>Created:</strong> @vehicle.CreatedAt.ToString("yyyy-MM-dd HH:mm")
+                                    <strong>Created:</strong> @vehicle.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
                                 </small>
                             </div>
                             <div class="col-md-6">
                                 <small class="text-muted">
-                                    <strong>Last Updated:</strong> @(vehicle.UpdatedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")
+                                    <strong>Last Updated:</strong> @(vehicle.UpdatedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "-")
                                 </small>
                             </div>
                         </div>

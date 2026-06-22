@@ -11,8 +11,8 @@ public class Customer
     [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters")]
     public string Name { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Phone Number is required")]
-    [RegularExpression(@"^[0-9]{10}$", ErrorMessage = "Phone Number must be exactly 10 digits (US format)")]
+    [RegularExpression(@"^\+1[0-9]{10}$",
+    ErrorMessage = "Phone Number must be in format +1XXXXXXXXXX")]
     public string PhoneNumber { get; set; } = string.Empty;
 
     [EmailAddress(ErrorMessage = "Invalid Email Address")]

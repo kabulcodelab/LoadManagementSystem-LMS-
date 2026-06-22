@@ -59,8 +59,10 @@
 
                     <!-- Phone Number (Required) -->
                     <div class="col-12 col-md-4">
-                        <label>Phone Number <span class="text-danger">*</span> (10 digits)</label>
-                        <InputText class="form-control" @bind-Value="customer.PhoneNumber" />
+                        <label>Phone Number <span class="text-danger">*</span> (+1XXXXXXXXXX)</label>
+                        <InputText class="form-control"
+                                   @bind-Value="customer.PhoneNumber"
+                                   maxlength="12" />
                         <ValidationMessage For="@(() => customer.PhoneNumber)" />
                     </div>
 

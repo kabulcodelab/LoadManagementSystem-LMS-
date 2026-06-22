@@ -5,11 +5,9 @@
 @using LoadManagementSystem_LMS_.Services
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components
-@using Microsoft.JSInterop
 
 @inject DashboardService DashboardService
 @inject NavigationManager Nav
-@inject IJSRuntime JSRuntime
 
 <div class="page-container">
 
@@ -131,41 +129,14 @@
 
         <br />
 
-        <!-- ============================================= -->
-        <!-- CHART SECTION                                -->
-        <!-- ============================================= -->
-        <div class="row g-3 mb-4">
-
-            <div class="col-12 col-md-6">
-                <div class="lms-card">
-                    <h6 class="mb-3">Load Status Distribution</h6>
-                    <div style="height: 250px;">
-                        <canvas id="loadStatusChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-6">
-                <div class="lms-card">
-                    <h6 class="mb-3">Daily Revenue (Last 7 Days)</h6>
-                    <div style="height: 250px;">
-                        <canvas id="revenueChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- ============================================= -->
-        <!-- RECENT LOADS TABLE                           -->
-        <!-- ============================================= -->
+        <!-- RECENT LOADS TABLE -->
         <div class="lms-card">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0">📋 Recent Loads</h5>
                 <a href="/loads" class="btn btn-sm btn-outline-primary">View All</a>
             </div>
 
-            @if (data.RecentLoads.Any())
+            @if (data.RecentLoads.Count > 0)
             {
                 <div class="table-responsive">
                     <table class="table table-striped table-hover align-middle">
@@ -205,7 +176,6 @@
 @code {
     private DashboardData data = new();
     private bool isLoading = true;
-    private bool chartsLoaded = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -213,114 +183,12 @@
         {
             data = await DashboardService.GetDashboardData();
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading dashboard data: {ex.Message}");
-        }
         finally
         {
             isLoading = false;
         }
     }
 
-    // ✅ Call LoadCharts after the component is rendered (DOM is ready)
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && !chartsLoaded)
-        {
-            await LoadCharts();
-            chartsLoaded = true;
-        }
-    }
-
-    // ================================================
-    // بارگذاری نمودارها
-    // ================================================
-    private async Task LoadCharts()
-    {
-        try
-        {
-            // 1. نمودار دایره‌ای – وضعیت بارها
-            var statusData = await DashboardService.GetLoadStatusDistribution();
-
-            var labels = new[] { "Pending", "In Transit", "Delivered", "Cancelled" };
-            var values = new[] { statusData.Pending, statusData.InTransit, statusData.Delivered, statusData.Cancelled };
-            var colors = new[] { "#ffc107", "#0dcaf0", "#198754", "#dc3545" };
-
-            await JSRuntime.InvokeVoidAsync("createChart",
-                "loadStatusChart",
-                "doughnut",
-                labels,
-                new[]
-                {
-                    new
-                    {
-                        data = values,
-                        backgroundColor = colors,
-                        borderWidth = 1
-                    }
-                },
-                new
-                {
-                    responsive = true,
-                    maintainAspectRatio = false,
-                    plugins = new
-                    {
-                        legend = new { position = "bottom" }
-                    }
-                }
-            );
-
-            // 2. نمودار میله‌ای – درآمد روزانه
-            var dailyRevenue = await DashboardService.GetDailyRevenue(7);
-            var dateLabels = dailyRevenue.Keys.Select(d => d.ToString("MM/dd")).ToArray();
-            var revenueValues = dailyRevenue.Values.ToArray();
-
-            await JSRuntime.InvokeVoidAsync("createChart",
-                "revenueChart",
-                "bar",
-                dateLabels,
-                new[]
-                {
-                    new
-                    {
-                        label = "Revenue ($)",
-                        data = revenueValues,
-                        backgroundColor = "#0d6efd",
-                        borderRadius = 4
-                    }
-                },
-                new
-                {
-                    responsive = true,
-                    maintainAspectRatio = false,
-                    plugins = new
-                    {
-                        legend = new { display = false }
-                    },
-                    scales = new
-                    {
-                        y = new
-                        {
-                            beginAtZero = true,
-                            ticks = new
-                            {
-                                callback = "function(value) { return '$' + value; }"
-                            }
-                        }
-                    }
-                }
-            );
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading charts: {ex.Message}");
-        }
-    }
-
-    // ================================================
-    // متد کمکی برای کلاس وضعیت
-    // ================================================
     private string GetStatusClass(LoadStatus status)
     {
         return status switch
