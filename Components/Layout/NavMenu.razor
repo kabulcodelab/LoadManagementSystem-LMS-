@@ -1,9 +1,12 @@
 ﻿@implements IDisposable
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 @using Microsoft.AspNetCore.Authorization
 
 <style>
-    /* Sidebar base */
+    /* ==========================================
+           ORIGINAL BRAND STYLES (Completely Preserved)
+        ========================================== */
     .verano-sidebar,
     .verano-sidebar * {
         font-family: "Segoe UI", Tahoma, sans-serif !important;
@@ -15,7 +18,7 @@
         height: 100vh;
         display: flex;
         flex-direction: column;
-        padding: 1rem;
+        padding: 1rem; /* Original padding preserved */
         color: #e8edf3 !important;
     }
 
@@ -70,6 +73,7 @@
         border: none;
         width: 100%;
         text-align: right;
+        cursor: pointer;
     }
 
         .verano-sidebar .nav-link i {
@@ -113,6 +117,7 @@
         text-align: right;
         display: flex;
         align-items: center;
+        cursor: pointer;
     }
 
         .verano-sidebar .logout-btn i {
@@ -141,6 +146,8 @@
     .verano-sidebar .nav-scroll {
         overflow-y: auto;
         flex: 1;
+        padding: 0.5rem 0;
+        transition: all 0.3s ease;
     }
 
         .verano-sidebar .nav-scroll::-webkit-scrollbar {
@@ -156,23 +163,102 @@
             border-radius: 4px;
         }
 
+    /* ==========================================
+           NEW: Hamburger Toggle Button (Non-Intrusive)
+        ========================================== */
+
+    /* Brand container – flex to place toggle button on the right */
+    .verano-brand-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        /* All original brand styles (mb-3, pb-2, border-bottom) are preserved */
+    }
+
+    /* Toggle button – gold themed, visible only on mobile via media query */
+    .sidebar-toggle {
+        background: transparent;
+        border: 1px solid rgba(245, 215, 66, 0.5);
+        color: #f5d742;
+        font-size: 1.6rem;
+        cursor: pointer;
+        padding: 0.2rem 0.6rem;
+        border-radius: 6px;
+        transition: background 0.2s, border-color 0.2s;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 0.5rem;
+    }
+
+        .sidebar-toggle:hover {
+            background: rgba(245, 215, 66, 0.15);
+            border-color: #f5d742;
+        }
+
+    /* Collapsed menu (hidden) */
+    .nav-scroll.collapsed {
+        display: none !important;
+    }
+
+    /* ==========================================
+           RESPONSIVE
+        ========================================== */
+
+    /* Mobile (max-width: 768px) */
     @@media (max-width: 768px) {
         .verano-sidebar {
             min-width: 100%;
+            max-width: 100%;
             height: auto;
             padding: 0.75rem;
         }
+        /* Show toggle button on mobile */
+        .sidebar-toggle {
+            display: flex !important;
+        }
+        /* Adjust brand margin on mobile */
+        .verano-brand-container {
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
 
-            .verano-sidebar .nav-scroll {
-                max-height: 80vh;
+        .nav-scroll {
+            max-height: 80vh;
+            padding: 0.25rem 0;
+        }
+
+        .verano-sidebar .nav-link {
+            padding: 0.4rem 0.6rem;
+            font-size: 0.9rem;
+        }
+
+            .verano-sidebar .nav-link i {
+                font-size: 1rem;
+                margin-left: 0.5rem;
             }
+    }
+
+    /* Desktop & Tablet (>= 769px) */
+    @@media (min-width: 769px) {
+        /* Hide toggle button on desktop/tablet */
+        .sidebar-toggle {
+            display: none !important;
+        }
+        /* Menu always open (ignore collapsed class) */
+        .nav-scroll.collapsed {
+            display: block !important;
+        }
     }
 </style>
 
 <div class="verano-sidebar" dir="ltr">
 
-    <!-- Brand -->
-    <div class="verano-brand mb-3 pb-2 border-bottom verano-divider">
+    <!-- ===== BRAND + TOGGLE BUTTON (Preserved original styling) ===== -->
+    <div class="verano-brand-container verano-brand mb-3 pb-2 border-bottom verano-divider">
+        <!-- Brand section – completely unchanged -->
         <div class="d-flex align-items-center px-2 py-2" style="cursor:default; gap: 12px;">
             <div class="brand-logo">
                 <svg width="52" height="52" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -189,66 +275,70 @@
                 <div class="brand-sub">Load Management</div>
             </div>
         </div>
+
+        <!-- Hamburger toggle button (hidden on desktop via CSS) -->
+        <button class="sidebar-toggle" @onclick="ToggleMenu" aria-label="Toggle navigation">
+            <i class="bi @(isMenuOpen ? "bi-x-lg" : "bi-list")"></i>
+        </button>
     </div>
 
-    <!-- Navigation -->
-    <div class="nav-scroll">
+    <!-- ===== NAVIGATION ===== -->
+    <div class="nav-scroll @(isMenuOpen ? "" : "collapsed")">
         <nav class="nav nav-pills flex-column nav-gap">
 
-            <!-- Outer AuthorizeView – with a unique Context name -->
             <AuthorizeView Context="auth">
                 <Authorized>
-                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    <!-- Each link calls CloseMenuIfMobile to auto-close on mobile -->
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All" @onclick="CloseMenuIfMobile">
                         <i class="bi bi-house-door-fill"></i> Dashboard
                     </NavLink>
-                    <NavLink class="nav-link" href="/drivers">
+                    <NavLink class="nav-link" href="/drivers" @onclick="CloseMenuIfMobile">
                         <i class="bi bi-people-fill"></i> Drivers
                     </NavLink>
-                    <NavLink class="nav-link" href="/vehicles">
+                    <NavLink class="nav-link" href="/vehicles" @onclick="CloseMenuIfMobile">
                         <i class="bi bi-truck"></i> Vehicles
                     </NavLink>
-                    <NavLink class="nav-link" href="/customers">
+                    <NavLink class="nav-link" href="/customers" @onclick="CloseMenuIfMobile">
                         <i class="bi bi-buildings"></i> Customers
                     </NavLink>
-                    <NavLink class="nav-link" href="/loads">
+                    <NavLink class="nav-link" href="/loads" @onclick="CloseMenuIfMobile">
                         <i class="bi bi-box-seam"></i> Loads
                     </NavLink>
-                    <NavLink class="nav-link" href="/documents">
+                    <NavLink class="nav-link" href="/documents" @onclick="CloseMenuIfMobile">
                         <i class="bi bi-file-earmark"></i> Documents
                     </NavLink>
-                    <NavLink class="nav-link" href="/stops">
+                    <NavLink class="nav-link" href="/stops" @onclick="CloseMenuIfMobile">
                         <i class="bi bi-geo-alt"></i> Stops
                     </NavLink>
 
                     <hr class="hr-gold" />
 
-                    <!-- Inner AuthorizeView – Admin only (uses default context) -->
                     <AuthorizeView Roles="Admin">
                         <Authorized>
-                            <NavLink class="nav-link" href="/admin/users">
+                            <NavLink class="nav-link" href="/admin/users" @onclick="CloseMenuIfMobile">
                                 <i class="bi bi-people"></i> User Management
                             </NavLink>
                         </Authorized>
                     </AuthorizeView>
 
-                    <NavLink class="nav-link" href="Account/Manage">
+                    <NavLink class="nav-link" href="Account/Manage" @onclick="CloseMenuIfMobile">
                         <i class="bi bi-person-fill"></i> Settings
                     </NavLink>
 
                     <form action="Account/Logout" method="post" class="mt-1">
                         <AntiforgeryToken />
                         <input type="hidden" name="ReturnUrl" value="@currentUrl" />
-                        <button type="submit" class="logout-btn">
+                        <button type="submit" class="logout-btn" @onclick="CloseMenuIfMobile">
                             <i class="bi bi-box-arrow-left"></i> Logout
                         </button>
                     </form>
                 </Authorized>
 
                 <NotAuthorized>
-                    <NavLink class="nav-link" href="Account/Login">
+                    <NavLink class="nav-link" href="Account/Login" @onclick="CloseMenuIfMobile">
                         <i class="bi bi-box-arrow-in-right"></i> Login
                     </NavLink>
-                    <NavLink class="nav-link" href="Account/Register">
+                    <NavLink class="nav-link" href="Account/Register" @onclick="CloseMenuIfMobile">
                         <i class="bi bi-person-plus-fill"></i> Register
                     </NavLink>
                 </NotAuthorized>
@@ -260,11 +350,52 @@
 
 @code {
     private string? currentUrl;
+    private bool isMenuOpen = true;      // Default: open (desktop/tablet)
+    private bool isMobile = false;       // Detected after first render
+    private DotNetObjectReference<NavMenu>? _dotNetRef;
 
     protected override void OnInitialized()
     {
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await DetectMobile();
+
+                // Attach resize event listener
+                _dotNetRef = DotNetObjectReference.Create(this);
+                await JSRuntime.InvokeVoidAsync("window.addEventListener", "resize", _dotNetRef, "OnWindowResize");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"JS Interop error: {ex.Message}");
+            }
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnWindowResize()
+    {
+        await DetectMobile();
+        StateHasChanged();
+    }
+
+    private async Task DetectMobile()
+    {
+        bool mobile = await JSRuntime.InvokeAsync<bool>("window.matchMedia", "(max-width: 768px)").AsTask();
+        if (mobile != isMobile)
+        {
+            isMobile = mobile;
+            // On mobile: menu closed, on desktop/tablet: menu open
+            isMenuOpen = !isMobile;
+            StateHasChanged();
+        }
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -273,8 +404,35 @@
         StateHasChanged();
     }
 
+    private void ToggleMenu()
+    {
+        if (isMobile)
+        {
+            isMenuOpen = !isMenuOpen;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseMenuIfMobile()
+    {
+        if (isMobile)
+        {
+            isMenuOpen = false;
+            StateHasChanged();
+        }
+    }
+
     public void Dispose()
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
+        if (_dotNetRef != null)
+        {
+            try
+            {
+                JSRuntime.InvokeVoidAsync("window.removeEventListener", "resize", _dotNetRef, "OnWindowResize");
+            }
+            catch { }
+            _dotNetRef.Dispose();
+        }
     }
 }
