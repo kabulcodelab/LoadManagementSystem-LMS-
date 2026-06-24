@@ -44,7 +44,9 @@
         <DataAnnotationsValidator />
         <ValidationSummary class="alert alert-danger" />
 
-        <!-- Tabs -->
+        <!-- ============================================= -->
+        <!-- TABS                                          -->
+        <!-- ============================================= -->
         <ul class="nav nav-tabs mb-3" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link @(activeTab == "info" ? "active" : "")"
@@ -71,354 +73,349 @@
         <!-- ============================================= -->
         <!-- TAB 1: LOAD INFO                              -->
         <!-- ============================================= -->
-        <div class="tab-pane @(activeTab == "info" ? "show active" : "")">
-            <div class="lms-card">
-                <div class="row g-3">
+        @if (activeTab == "info")
+        {
+            <div class="tab-pane show active">
+                <div class="lms-card">
+                    <div class="row g-3">
 
-                    
-                    <!-- Load Number -->
-                    <div class="col-12 col-md-4">
-                        <label>Load Number</label>
-                        <InputText class="form-control" @bind-Value="load.LoadNumber" />
-                        <small class="text-muted">Leave empty to auto‑generate</small>
+                        <!-- Load Number -->
+                        <div class="col-12 col-md-4">
+                            <label>Load Number</label>
+                            <InputText class="form-control" @bind-Value="load.LoadNumber" />
+                            <small class="text-muted">Leave empty to auto‑generate</small>
+                        </div>
+
+                        <!-- Tracking Number -->
+                        <div class="col-12 col-md-4">
+                            <label>Po Number</label>
+                            <InputText class="form-control" @bind-Value="load.TrackingNumber" />
+                        </div>
+
+                        <!-- Load Type -->
+                        <div class="col-12 col-md-4">
+                            <label>Load Type</label>
+                            <InputSelect class="form-select" @bind-Value="load.Type">
+                                @foreach (LoadType type in Enum.GetValues(typeof(LoadType)))
+                                {
+                                    <option value="@type">@type.ToString()</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <!-- Customer -->
+                        <div class="col-12 col-md-4">
+                            <label>Customer <span class="text-danger">*</span></label>
+                            <InputSelect class="form-select" @bind-Value="load.CustomerId">
+                                <option value="0">Select Customer</option>
+                                @foreach (var c in customers)
+                                {
+                                    <option value="@c.Id">@c.Name</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="@(() => load.CustomerId)" />
+                        </div>
+
+                        <!-- Driver -->
+                        <div class="col-12 col-md-4">
+                            <label>Driver <span class="text-danger">*</span></label>
+                            <InputSelect class="form-select" @bind-Value="load.DriverId">
+                                <option value="0">Select Driver</option>
+                                @foreach (var d in drivers)
+                                {
+                                    <option value="@d.Id">@d.FullName</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="@(() => load.DriverId)" />
+                        </div>
+
+                        <!-- Vehicle -->
+                        <div class="col-12 col-md-4">
+                            <label>Vehicle <span class="text-danger">*</span></label>
+                            <InputSelect class="form-select" @bind-Value="load.VehicleId">
+                                <option value="0">Select Vehicle</option>
+                                @foreach (var v in vehicles)
+                                {
+                                    <option value="@v.Id">@v.PlateNumber - @v.Model</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="@(() => load.VehicleId)" />
+                        </div>
+
+                        <!-- Status -->
+                        <div class="col-12 col-md-4">
+                            <label>Status</label>
+                            <InputSelect class="form-select" @bind-Value="load.Status">
+                                @foreach (LoadStatus status in Enum.GetValues(typeof(LoadStatus)))
+                                {
+                                    <option value="@status">@status.ToString()</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <!-- Pickup Date -->
+                        <div class="col-12 col-md-4">
+                            <label>Pickup Date</label>
+                            <InputDate class="form-control" @bind-Value="load.PickupDate" />
+                        </div>
+
+                        <!-- Delivery Date -->
+                        <div class="col-12 col-md-4">
+                            <label>Delivery Date</label>
+                            <InputDate class="form-control" @bind-Value="load.DeliveryDate" />
+                        </div>
+
+                        <!-- Amount -->
+                        <div class="col-12 col-md-4">
+                            <label>Amount</label>
+                            <InputNumber class="form-control" @bind-Value="load.Amount" step="0.01" />
+                        </div>
+
+                        <!-- Is Paid -->
+                        <div class="col-12 col-md-4 d-flex align-items-center">
+                            <div class="form-check">
+                                <InputCheckbox class="form-check-input" @bind-Value="load.IsPaid" />
+                                <label class="form-check-label">Paid</label>
+                            </div>
+                        </div>
+
+                        <!-- Remarks -->
+                        <div class="col-12">
+                            <label>Remarks</label>
+                            <InputTextArea class="form-control" @bind-Value="load.Remarks" rows="3" placeholder="Any additional notes..." />
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- ============================================= -->
+        <!-- TAB 2: STOPS                                  -->
+        <!-- ============================================= -->
+        @if (activeTab == "stops")
+        {
+            <div class="tab-pane show active">
+                <div class="lms-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Initial Pick-Up</h5>
+                        <button type="button" class="btn btn-sm btn-success" @onclick="AddStop">
+                            <i class="bi bi-plus-circle"></i> Add Stops +
+                        </button>
                     </div>
 
-                    <!-- Tracking Number -->
-                    <div class="col-12 col-md-4">
-                        <label>Po Number</label>
-                        <InputText class="form-control" @bind-Value="load.TrackingNumber" />
-                    </div>
+                    @if (load.Stops.Count == 0)
+                    {
+                        <p class="text-muted">No stops added yet. Click "Add Stops +" to start.</p>
+                    }
+                    else
+                    {
+                        @for (int i = 0; i < load.Stops.Count; i++)
+                        {
+                            var stop = load.Stops[i];
+                            <div class="border rounded p-3 mb-3 position-relative">
 
-                    <!-- Load Type -->
-                    <div class="col-12 col-md-4">
-                        <label>Load Type</label>
-                        <InputSelect class="form-select" @bind-Value="load.Type">
-                            @foreach (LoadType type in Enum.GetValues(typeof(LoadType)))
-                            {
-                                <option value="@type">@type.ToString()</option>
-                            }
-                        </InputSelect>
-                    </div>
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0">Stop @(i + 1)</h6>
+                                    <button type="button" class="btn-close"
+                                            @onclick='() => RemoveStop(stop)'
+                                            title="Remove this stop"
+                                            disabled="@(load.Stops.Count == 1)">
+                                    </button>
+                                </div>
 
-                    <!-- Customer -->
-                    <div class="col-12 col-md-4">
-                        <label>Customer <span class="text-danger">*</span></label>
-                        <InputSelect class="form-select" @bind-Value="load.CustomerId">
-                            <option value="0">Select Customer</option>
-                            @foreach (var c in customers)
-                            {
-                                <option value="@c.Id">@c.Name</option>
-                            }
-                        </InputSelect>
-                        <ValidationMessage For="@(() => load.CustomerId)" />
-                    </div>
+                                <div class="row g-3">
+                                    <!-- Type -->
+                                    <div class="col-12 col-md-3">
+                                        <label>Type</label>
+                                        <InputSelect class="form-select" @bind-Value="stop.Type">
+                                            <option value="@StopType.Pickup">Pickup</option>
+                                            <option value="@StopType.Delivery">Delivery</option>
+                                        </InputSelect>
+                                    </div>
 
-                    <!-- Driver -->
-                    <div class="col-12 col-md-4">
-                        <label>Driver <span class="text-danger">*</span></label>
-                        <InputSelect class="form-select" @bind-Value="load.DriverId">
-                            <option value="0">Select Driver</option>
-                            @foreach (var d in drivers)
-                            {
-                                <option value="@d.Id">@d.FullName</option>
-                            }
-                        </InputSelect>
-                        <ValidationMessage For="@(() => load.DriverId)" />
-                    </div>
+                                    <!-- Company -->
+                                    <div class="col-12 col-md-3">
+                                        <label>Company</label>
+                                        <InputText class="form-control" @bind-Value="stop.Company" placeholder="Company name" />
+                                    </div>
 
-                    <!-- Vehicle -->
-                    <div class="col-12 col-md-4">
-                        <label>Vehicle <span class="text-danger">*</span></label>
-                        <InputSelect class="form-select" @bind-Value="load.VehicleId">
-                            <option value="0">Select Vehicle</option>
-                            @foreach (var v in vehicles)
-                            {
-                                <option value="@v.Id">@v.PlateNumber - @v.Model</option>
-                            }
-                        </InputSelect>
-                        <ValidationMessage For="@(() => load.VehicleId)" />
-                    </div>
+                                    <!-- Initial Date/Time -->
+                                    <div class="col-12 col-md-3">
+                                        <label>Initial Date/Time</label>
+                                        <InputDate class="form-control" @bind-Value="stop.InitialDateTime" />
+                                    </div>
 
-                    <!-- Status -->
-                    <div class="col-12 col-md-4">
-                        <label>Status</label>
-                        <InputSelect class="form-select" @bind-Value="load.Status">
-                            @foreach (LoadStatus status in Enum.GetValues(typeof(LoadStatus)))
-                            {
-                                <option value="@status">@status.ToString()</option>
-                            }
-                        </InputSelect>
-                    </div>
+                                    <!-- Final Date/Time -->
+                                    <div class="col-12 col-md-3">
+                                        <label>Final Date/Time</label>
+                                        <InputDate class="form-control" @bind-Value="stop.FinalDateTime" />
+                                    </div>
 
-                    <!-- Pickup Date -->
-                    <div class="col-12 col-md-4">
-                        <label>Pickup Date</label>
-                        <InputDate class="form-control" @bind-Value="load.PickupDate" />
-                    </div>
+                                    <!-- Address -->
+                                    <div class="col-12 col-md-6">
+                                        <label>Address</label>
+                                        <InputText class="form-control" @bind-Value="stop.Address" placeholder="Street address" />
+                                    </div>
 
-                    <!-- Delivery Date -->
-                    <div class="col-12 col-md-4">
-                        <label>Delivery Date</label>
-                        <InputDate class="form-control" @bind-Value="load.DeliveryDate" />
-                    </div>
+                                    <!-- City -->
+                                    <div class="col-12 col-md-2">
+                                        <label>City</label>
+                                        <InputText class="form-control" @bind-Value="stop.City" placeholder="City" />
+                                    </div>
 
-                    <!-- Amount -->
-                    <div class="col-12 col-md-4">
-                        <label>Amount</label>
-                        <InputNumber class="form-control" @bind-Value="load.Amount" step="0.01" />
-                    </div>
+                                    <!-- State -->
+                                    <div class="col-12 col-md-3">
+                                        <label>State</label>
+                                        <InputSelect class="form-select" @bind-Value="stop.State">
+                                            <option value="">Select State</option>
+                                            @foreach (var state in UsStates)
+                                            {
+                                                <option value="@state">@state</option>
+                                            }
+                                        </InputSelect>
+                                    </div>
 
-                    <!-- Is Paid -->
-                    <div class="col-12 col-md-4 d-flex align-items-center">
-                        <div class="form-check">
-                            <InputCheckbox class="form-check-input" @bind-Value="load.IsPaid" />
-                            <label class="form-check-label">Paid</label>
+                                    <!-- Zip Code -->
+                                    <div class="col-12 col-md-2">
+                                        <label>Zip Code</label>
+                                        <InputText class="form-control" @bind-Value="stop.ZipCode" placeholder="Zip" />
+                                    </div>
+
+                                    <!-- Pickup Number -->
+                                    <div class="col-12 col-md-3">
+                                        <label>Pickup Number</label>
+                                        <InputText class="form-control" @bind-Value="stop.PickupNumber" placeholder="Ref #" />
+                                    </div>
+
+                                    <!-- Loaded Miles -->
+                                    <div class="col-12 col-md-3">
+                                        <label>Loaded Miles</label>
+                                        <InputNumber class="form-control" @bind-Value="stop.LoadedMiles" step="0.1" />
+                                    </div>
+
+                                    <!-- Empty Miles -->
+                                    <div class="col-12 col-md-3">
+                                        <label>Empty Miles</label>
+                                        <InputNumber class="form-control" @bind-Value="stop.EmptyMiles" step="0.1" />
+                                    </div>
+
+                                    <!-- Remarks -->
+                                    <div class="col-12">
+                                        <label>Remarks</label>
+                                        <InputText class="form-control" @bind-Value="stop.Remarks" placeholder="Any notes for this stop" />
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- ============================================= -->
+        <!-- TAB 3: FILES                                  -->
+        <!-- ============================================= -->
+        @if (activeTab == "files")
+        {
+            <div class="tab-pane show active">
+                <div class="lms-card">
+                    <h5 class="mb-3">Upload Documents</h5>
+
+                    <!-- Rate Confirmation -->
+                    <div class="border rounded p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Rate Confirmation</h6>
+                            <InputFile class="form-control w-auto"
+                                       OnChange="@((e) => HandleFileUpload(e, DocumentType.RateConfirmation))"
+                                       multiple />
                         </div>
                     </div>
 
-                    <!-- Remarks -->
-                    <div class="col-12">
-                        <label>Remarks</label>
-                        <InputTextArea class="form-control" @bind-Value="load.Remarks" rows="3" placeholder="Any additional notes..." />
+                    <!-- Bill of Lading -->
+                    <div class="border rounded p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Bill of Lading</h6>
+                            <InputFile class="form-control w-auto"
+                                       OnChange="@((e) => HandleFileUpload(e, DocumentType.BillOfLading))"
+                                       multiple />
+                        </div>
                     </div>
 
-                </div>
-            </div>
-        </div>
+                    <!-- Other -->
+                    <div class="border rounded p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Other</h6>
+                            <InputFile class="form-control w-auto"
+                                       OnChange="@((e) => HandleFileUpload(e, DocumentType.Others))"
+                                       multiple />
+                        </div>
+                    </div>
 
-        <!-- ============================================= -->
-        <!-- TAB 2: STOPS (Safe deletion by object)       -->
-        <!-- ============================================= -->
-        <div class="tab-pane @(activeTab == "stops" ? "show active" : "")">
-            <div class="lms-card">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">Initial Pick-Up</h5>
-                    <button type="button" class="btn btn-sm btn-success" @onclick="AddStop">
-                        <i class="bi bi-plus-circle"></i> Add Stops +
-                    </button>
-                </div>
-
-                @if (load.Stops.Count == 0)
-                {
-                    <p class="text-muted">No stops added yet. Click "Add Stops +" to start.</p>
-                }
-                else
-                {
-                    @for (int i = 0; i < load.Stops.Count; i++)
+                    <!-- Uploaded Files Table -->
+                    @if (load.Documents.Count > 0)
                     {
-                        var stop = load.Stops[i];
-                        <div class="border rounded p-3 mb-3 position-relative">
-
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="mb-0">Stop @(i + 1)</h6>
-                                <button type="button" class="btn-close"
-                                        @onclick='() => RemoveStop(stop)'
-                                        title="Remove this stop"
-                                        disabled="@(load.Stops.Count == 1)">
-                                </button>
-                            </div>
-
-                            <div class="row g-3">
-                                <!-- Type -->
-                                <div class="col-12 col-md-3">
-                                    <label>Type</label>
-                                    <InputSelect class="form-select" @bind-Value="stop.Type">
-                                        <option value="@StopType.Pickup">Pickup</option>
-                                        <option value="@StopType.Delivery">Delivery</option>
-                                    </InputSelect>
-                                </div>
-
-                                <!-- Company -->
-                                <div class="col-12 col-md-3">
-                                    <label>Company</label>
-                                    <InputText class="form-control" @bind-Value="stop.Company" placeholder="Company name" />
-                                </div>
-
-                                <!-- Initial Date/Time -->
-                                <div class="col-12 col-md-3">
-                                    <label>Initial Date/Time</label>
-                                    <InputDate class="form-control" @bind-Value="stop.InitialDateTime" />
-                                </div>
-
-                                <!-- Final Date/Time -->
-                                <div class="col-12 col-md-3">
-                                    <label>Final Date/Time</label>
-                                    <InputDate class="form-control" @bind-Value="stop.FinalDateTime" />
-                                </div>
-
-                                <!-- Address -->
-                                <div class="col-12 col-md-6">
-                                    <label>Address</label>
-                                    <InputText class="form-control" @bind-Value="stop.Address" placeholder="Street address" />
-                                </div>
-
-                                <!-- City -->
-                                <div class="col-12 col-md-2">
-                                    <label>City</label>
-                                    <InputText class="form-control" @bind-Value="stop.City" placeholder="City" />
-                                </div>
-
-                                <!-- ========================================== -->
-                                <!-- State (Dropdown with US States)           -->
-                                <!-- ========================================== -->
-                                <div class="col-12 col-md-3">
-                                    <!-- changed to col-md-3 to fit better -->
-                                    <label>State</label>
-                                    <InputSelect class="form-select" @bind-Value="stop.State">
-                                        <option value="">Select State</option>
-                                        @foreach (var state in UsStates)
-                                        {
-                                            <option value="@state">@state</option>
-                                        }
-                                    </InputSelect>
-                                </div>
-
-                                <!-- Zip Code -->
-                                <div class="col-12 col-md-2">
-                                    <label>Zip Code</label>
-                                    <InputText class="form-control" @bind-Value="stop.ZipCode" placeholder="Zip" />
-                                </div>
-
-                                <!-- Pickup Number -->
-                                <div class="col-12 col-md-3">
-                                    <label>Pickup Number</label>
-                                    <InputText class="form-control" @bind-Value="stop.PickupNumber" placeholder="Ref #" />
-                                </div>
-
-                                <!-- Loaded Miles -->
-                                <div class="col-12 col-md-3">
-                                    <label>Loaded Miles</label>
-                                    <InputNumber class="form-control" @bind-Value="stop.LoadedMiles" step="0.1" />
-                                </div>
-
-                                <!-- Empty Miles -->
-                                <div class="col-12 col-md-3">
-                                    <label>Empty Miles</label>
-                                    <InputNumber class="form-control" @bind-Value="stop.EmptyMiles" step="0.1" />
-                                </div>
-
-                                <!-- Remarks -->
-                                <div class="col-12">
-                                    <label>Remarks</label>
-                                    <InputText class="form-control" @bind-Value="stop.Remarks" placeholder="Any notes for this stop" />
-                                </div>
-                            </div>
+                        <div class="table-responsive mt-3">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>File Name</th>
+                                        <th>Type</th>
+                                        <th>Size</th>
+                                        <th>Uploaded</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var doc in load.Documents)
+                                    {
+                                        <tr>
+                                            <td>@doc.FileName</td>
+                                            <td>
+                                                <span class="badge @GetDocTypeBadge(doc.FileType)">
+                                                    @GetDocumentTypeDisplayName(doc.FileType)
+                                                </span>
+                                            </td>
+                                            <td>@(doc.FileSize?.ToString("N0") ?? "-") bytes</td>
+                                            <td>@doc.UploadedAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    @if (doc.FileContent != null && doc.FileContent.Length > 0)
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-success"
+                                                                @onclick='() => ViewFile(doc)'>
+                                                            <i class="bi bi-eye"></i>
+                                                        </button>
+                                                    }
+                                                    else if (!string.IsNullOrEmpty(doc.FilePath))
+                                                    {
+                                                        <a class="btn btn-sm btn-outline-success"
+                                                           href="@doc.FilePath" target="_blank">
+                                                            <i class="bi bi-eye"></i>
+                                                        </a>
+                                                    }
+                                                    <button type="button" class="btn btn-sm btn-danger"
+                                                            @onclick='() => RemoveFile(doc)'>
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
                         </div>
                     }
-                }
+                    else
+                    {
+                        <p class="text-muted mt-3">No files uploaded yet.</p>
+                    }
+                </div>
             </div>
-        </div>
+        }
 
         <!-- ============================================= -->
-        <!-- TAB 3: FILES (With document type selection)  -->
-        <!-- ============================================= -->
-        <div class="tab-pane @(activeTab == "files" ? "show active" : "")">
-            <div class="lms-card">
-                <h5 class="mb-3">Upload Documents</h5>
-
-                <!-- ========================================== -->
-                <!-- 1. Rate Confirmation                       -->
-                <!-- ========================================== -->
-                <div class="border rounded p-3 mb-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">Rate Confirmation</h6>
-                        <InputFile class="form-control w-auto"
-                                   OnChange="@((e) => HandleFileUpload(e, DocumentType.RateConfirmation))"
-                                   multiple />
-                    </div>
-                </div>
-
-                <!-- ========================================== -->
-                <!-- 2. Bill of Lading                          -->
-                <!-- ========================================== -->
-                <div class="border rounded p-3 mb-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">Bill of Lading</h6>
-                        <InputFile class="form-control w-auto"
-                                   OnChange="@((e) => HandleFileUpload(e, DocumentType.BillOfLading))"
-                                   multiple />
-                    </div>
-                </div>
-
-                <!-- ========================================== -->
-                <!-- 3. Other                                   -->
-                <!-- ========================================== -->
-                <div class="border rounded p-3 mb-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">Other</h6>
-                        <InputFile class="form-control w-auto"
-                                   OnChange="@((e) => HandleFileUpload(e, DocumentType.Others))"
-                                   multiple />
-                    </div>
-                </div>
-
-                <!-- ========================================== -->
-                <!-- Uploaded Files Table                       -->
-                <!-- ========================================== -->
-                @if (load.Documents.Count > 0)
-                {
-                    <div class="table-responsive mt-3">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>File Name</th>
-                                    <th>Type</th>
-                                    <th>Size</th>
-                                    <th>Uploaded</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var doc in load.Documents)
-                                {
-                                    <tr>
-                                        <td>@doc.FileName</td>
-                                        <td>
-                                            <span class="badge @GetDocTypeBadge(doc.FileType)">
-                                                @GetDocumentTypeDisplayName(doc.FileType)
-                                            </span>
-                                        </td>
-                                        <td>@(doc.FileSize?.ToString("N0") ?? "-") bytes</td>
-                                        <td>@doc.UploadedAt?.ToString("yyyy-MM-dd HH:mm")</td>
-                                        <td>
-                                            <div class="d-flex gap-1">
-                                                <!-- View Button -->
-                                                @if (doc.FileContent != null && doc.FileContent.Length > 0)
-                                                {
-                                                    <button class="btn btn-sm btn-outline-success"
-                                                            @onclick='() => ViewFile(doc)'>
-                                                        <i class="bi bi-eye"></i>
-                                                    </button>
-                                                }
-                                                else if (!string.IsNullOrEmpty(doc.FilePath))
-                                                {
-                                                    <a class="btn btn-sm btn-outline-success"
-                                                       href="@doc.FilePath" target="_blank">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                }
-                                                <!-- Delete Button -->
-                                                <button type="button" class="btn btn-sm btn-danger"
-                                                        @onclick='() => RemoveFile(doc)'>
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-                else
-                {
-                    <p class="text-muted mt-3">No files uploaded yet.</p>
-                }
-            </div>
-        </div>
-
-        <!-- ============================================= -->
-        <!-- BUTTONS                                      -->
+        <!-- BUTTONS                                       -->
         <!-- ============================================= -->
         <div class="d-flex flex-wrap gap-2 mt-4">
             <button type="submit" class="btn btn-add w-100 w-md-auto" disabled="@IsProcessing">
@@ -630,14 +627,12 @@
     // ===== Save =====
     private async Task HandleValidSubmit()
     {
-        // Show processing alert and disable buttons
         IsProcessing = true;
         StateHasChanged();
 
         try
         {
             await LoadService.Add(load);
-            // Success
             ShowAlertMessage($"Load '{load.LoadNumber}' created successfully!", isError: false);
             await Task.Delay(1000);
             Nav.NavigateTo("/loads");
